@@ -107,62 +107,97 @@
                             </c:choose>
                         </td>
                         <td class="px-4 py-3 text-right">
-                            <div class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1.5 max-w-[260px] ml-auto">
-                                <button type="button" class="text-slate-500 hover:text-indigo-600" title="Editar nombre y correo"
+                            <button type="button" onclick="alternarMenuAcciones(this)"
+                                    class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                                    title="Más acciones">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                                    <circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/>
+                                </svg>
+                            </button>
+
+                            <div class="menu-acciones hidden fixed z-50 w-56 bg-white rounded-xl shadow-lg border border-slate-100 py-1.5 text-sm">
+                                <button type="button" class="w-full text-left px-3 py-2 flex items-center gap-2.5 text-slate-600 hover:bg-slate-50"
                                         onclick="abrirModalEditarUsuario(this)"
                                         data-id="${u.id}" data-nombres="${fn:escapeXml(u.nombres)}"
                                         data-apellidos="${fn:escapeXml(u.apellidos)}" data-correo="${fn:escapeXml(u.correo)}"
-                                        data-telefono="${fn:escapeXml(u.telefono)}">Editar</button>
+                                        data-telefono="${fn:escapeXml(u.telefono)}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                    Editar datos
+                                </button>
+
                                 <c:if test="${u.bloqueado}">
-                                    <form method="post" action="${pageContext.request.contextPath}/usuarios" class="inline">
+                                    <form method="post" action="${pageContext.request.contextPath}/usuarios">
                                         <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                         <input type="hidden" name="accion" value="desbloquear">
                                         <input type="hidden" name="usuarioId" value="${u.id}">
-                                        <button type="submit" class="text-slate-500 hover:text-emerald-600" title="Levantar el bloqueo por intentos fallidos">Desbloquear</button>
+                                        <button type="submit" class="w-full text-left px-3 py-2 flex items-center gap-2.5 text-emerald-600 hover:bg-emerald-50">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 118 0m-9 4h10a1 1 0 011 1v7a1 1 0 01-1 1H7a1 1 0 01-1-1v-7a1 1 0 011-1z"/></svg>
+                                            Desbloquear cuenta
+                                        </button>
                                     </form>
                                 </c:if>
-                                <form method="post" action="${pageContext.request.contextPath}/usuarios" class="inline">
+
+                                <form method="post" action="${pageContext.request.contextPath}/usuarios">
                                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                     <input type="hidden" name="accion" value="restablecerPassword">
                                     <input type="hidden" name="usuarioId" value="${u.id}">
-                                    <button type="submit" class="text-slate-500 hover:text-blue-600" title="Restablecer contraseña">Clave</button>
+                                    <button type="submit" class="w-full text-left px-3 py-2 flex items-center gap-2.5 text-slate-600 hover:bg-slate-50">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 11-12 0 6 6 0 0112 0zM7 9a2 2 0 00-2 2v7a2 2 0 002 2h1"/></svg>
+                                        Restablecer contraseña
+                                    </button>
                                 </form>
+
+                                <div class="my-1 border-t border-slate-100"></div>
+
                                 <c:choose>
                                     <c:when test="${u.mfaHabilitado}">
-                                        <form method="post" action="${pageContext.request.contextPath}/usuarios" class="inline"
+                                        <form method="post" action="${pageContext.request.contextPath}/usuarios"
                                               onsubmit="return confirm('¿Desactivar el MFA de ${fn:escapeXml(u.nombreCompleto)}?');">
                                             <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                             <input type="hidden" name="accion" value="desactivarMfa">
                                             <input type="hidden" name="usuarioId" value="${u.id}">
-                                            <button type="submit" class="text-slate-500 hover:text-red-600" title="Desactivar MFA">MFA: quitar</button>
+                                            <button type="submit" class="w-full text-left px-3 py-2 flex items-center gap-2.5 text-red-600 hover:bg-red-50">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                Desactivar MFA
+                                            </button>
                                         </form>
                                     </c:when>
                                     <c:when test="${not empty u.mfaSecret}">
-                                        <form method="post" action="${pageContext.request.contextPath}/usuarios" class="inline"
+                                        <form method="post" action="${pageContext.request.contextPath}/usuarios"
                                               onsubmit="return confirm('¿Cancelar la activación pendiente de MFA de ${fn:escapeXml(u.nombreCompleto)}?');">
                                             <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                             <input type="hidden" name="accion" value="desactivarMfa">
                                             <input type="hidden" name="usuarioId" value="${u.id}">
-                                            <button type="submit" class="text-amber-600 hover:text-amber-700" title="Cancelar activación pendiente">MFA: cancelar</button>
+                                            <button type="submit" class="w-full text-left px-3 py-2 flex items-center gap-2.5 text-amber-600 hover:bg-amber-50">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
+                                                Cancelar activación MFA
+                                            </button>
                                         </form>
                                     </c:when>
                                     <c:otherwise>
-                                        <form method="post" action="${pageContext.request.contextPath}/usuarios" class="inline"
+                                        <form method="post" action="${pageContext.request.contextPath}/usuarios"
                                               onsubmit="return confirm('Se cerrará la sesión actual de ${fn:escapeXml(u.nombreCompleto)} (si tiene una abierta). En su próximo inicio de sesión deberá escanear el QR de Google Authenticator. ¿Continuar?');">
                                             <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                             <input type="hidden" name="accion" value="activarMfa">
                                             <input type="hidden" name="usuarioId" value="${u.id}">
-                                            <button type="submit" class="text-slate-500 hover:text-emerald-600" title="Activar MFA (el usuario verá el QR en su próximo login)">MFA: activar</button>
+                                            <button type="submit" class="w-full text-left px-3 py-2 flex items-center gap-2.5 text-emerald-600 hover:bg-emerald-50">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                Activar MFA
+                                            </button>
                                         </form>
                                     </c:otherwise>
                                 </c:choose>
-                                <form method="post" action="${pageContext.request.contextPath}/usuarios" class="inline">
+
+                                <div class="my-1 border-t border-slate-100"></div>
+
+                                <form method="post" action="${pageContext.request.contextPath}/usuarios">
                                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                     <input type="hidden" name="accion" value="cambiarEstado">
                                     <input type="hidden" name="usuarioId" value="${u.id}">
                                     <input type="hidden" name="nuevoEstado" value="${u.estado == 'ACTIVO' ? 'INACTIVO' : 'ACTIVO'}">
-                                    <button type="submit" class="text-slate-500 hover:text-red-600" title="Cambiar estado">
-                                        <c:out value="${u.estado == 'ACTIVO' ? 'Desactivar' : 'Reactivar'}"/>
+                                    <button type="submit" class="w-full text-left px-3 py-2 flex items-center gap-2.5 ${u.estado == 'ACTIVO' ? 'text-red-600 hover:bg-red-50' : 'text-emerald-600 hover:bg-emerald-50'}">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5.636 5.636a9 9 0 1012.728 0M12 3v9"/></svg>
+                                        <c:out value="${u.estado == 'ACTIVO' ? 'Desactivar cuenta' : 'Reactivar cuenta'}"/>
                                     </button>
                                 </form>
                             </div>
@@ -315,6 +350,38 @@
 </div>
 
 <script>
+    // Menú de acciones (⋮) por fila: se posiciona con `fixed` calculado desde el botón, así
+    // no lo corta el scroll horizontal de la tabla ni el borde inferior de la tarjeta.
+    function alternarMenuAcciones(boton) {
+        var menu = boton.nextElementSibling;
+        var estabaAbierto = !menu.classList.contains('hidden');
+        cerrarTodosLosMenus();
+        if (estabaAbierto) return;
+
+        var rectBoton = boton.getBoundingClientRect();
+        menu.classList.remove('hidden');
+        var rectMenu = menu.getBoundingClientRect();
+
+        var arriba = rectBoton.bottom + rectMenu.height > window.innerHeight - 8;
+        menu.style.top = (arriba ? rectBoton.top - rectMenu.height - 4 : rectBoton.bottom + 4) + 'px';
+
+        var izquierda = rectBoton.right - rectMenu.width;
+        if (izquierda < 8) izquierda = 8;
+        menu.style.left = izquierda + 'px';
+    }
+
+    function cerrarTodosLosMenus() {
+        document.querySelectorAll('.menu-acciones').forEach(function (m) { m.classList.add('hidden'); });
+    }
+
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.menu-acciones') && e.target.closest('button')?.getAttribute('title') !== 'Más acciones') {
+            cerrarTodosLosMenus();
+        }
+    });
+    window.addEventListener('scroll', cerrarTodosLosMenus, true);
+    window.addEventListener('resize', cerrarTodosLosMenus);
+
     function alternarVisibilidadPassword(idCampo, boton) {
         var campo = document.getElementById(idCampo);
         var esOculta = campo.type === 'password';
