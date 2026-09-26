@@ -1,0 +1,308 @@
+-- ==============================================================================
+-- SISTEMA BODEGACONTROL v2.4 - SCRIPT DDL Y DML COMPLETO PARA MYSQL WORKBENCH
+-- Compatible con MySQL 8.0+ / 8.4 LTS
+-- Motor de almacenamiento: InnoDB (Soporte transaccional ACID estricto)
+-- Cotejamiento: utf8mb4_unicode_ci
+-- ==============================================================================
+
+DROP DATABASE IF EXISTS bodega_db;
+CREATE DATABASE bodega_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE bodega_db;
+
+-- ------------------------------------------------------------------------------
+-- 1. TABLA: roles
+-- ------------------------------------------------------------------------------
+CREATE TABLE roles (
+    id_rol INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL UNIQUE COMMENT 'ADMINISTRADOR o VENDEDOR',
+    descripcion VARCHAR(255) NULL,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- ------------------------------------------------------------------------------
+-- 2. TABLA: usuarios
+-- Soporta múltiples Administradores y múltiples Vendedores
+-- ------------------------------------------------------------------------------
+CREATE TABLE usuarios (
+    id_usuario INT AUTO_INCREMENT PRIMARY KEY,
+    nombres VARCHAR(100) NOT NULL,
+    apellidos VARCHAR(100) NOT NULL,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(120) NOT NULL UNIQUE,
+    telefono VARCHAR(25) NULL,
+    password_hash VARCHAR(255) NOT NULL COMMENT 'Hash SHA-256 o BCrypt generado por Java',
+    id_rol INT NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
+    ultimo_acceso DATETIME NULL,
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_usuarios_roles FOREIGN KEY (id_rol) 
+        REFERENCES roles(id_rol) ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_usuarios_username ON usuarios(username);
+CREATE INDEX idx_usuarios_email ON usuarios(email);
+
+-- ------------------------------------------------------------------------------
+-- 3. TABLA: categorias
+-- Clasificación de productos para catálogo y POS
+-- ------------------------------------------------------------------------------
+CREATE TABLE categorias (
+    id_categoria INT AUTO_INCREMENT PRIMARY KEY,
+    codigo VARCHAR(20) NOT NULL UNIQUE,
+    nombre VARCHAR(100) NOT NULL,
+    descripcion TEXT NULL,
+    icono_pos VARCHAR(50) DEFAULT 'default',
+    margen_sugerido DECIMAL(5, 2) DEFAULT 25.00,
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- ------------------------------------------------------------------------------
+-- 4. TABLA: productos
+-- Maestro de SKU, precios y stock mínimo de alerta
+-- ------------------------------------------------------------------------------
+CREATE TABLE productos (
+    id_producto INT AUTO_INCREMENT PRIMARY KEY,
+    sku VARCHAR(50) NOT NULL UNIQUE,
+    codigo_barras VARCHAR(60) NULL UNIQUE,
+    nombre VARCHAR(150) NOT NULL,
+    descripcion TEXT NULL,
+    id_categoria INT NOT NULL,
+    marca VARCHAR(100) NULL,
+    precio_compra DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    precio_venta DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    stock_actual INT NOT NULL DEFAULT 0,
+    stock_minimo INT NOT NULL DEFAULT 5,
+    unidad_medida VARCHAR(20) NOT NULL DEFAULT 'und' COMMENT 'und, kg, litro, bolsa, paquete',
+    imagen_url VARCHAR(255) NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_productos_categorias FOREIGN KEY (id_categoria) 
+        REFERENCES categorias(id_categoria) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT chk_precios CHECK (precio_compra >= 0 AND precio_venta >= 0),
+    CONSTRAINT chk_stock CHECK (stock_minimo >= 0)
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_productos_sku ON productos(sku);
+CREATE INDEX idx_productos_cod_barras ON productos(codigo_barras);
+CREATE INDEX idx_productos_nombre ON productos(nombre);
+
+-- ------------------------------------------------------------------------------
+-- 5. TABLA: clientes
+-- Directorio de personas naturales y jurídicas con RUC / DNI
+-- ------------------------------------------------------------------------------
+CREATE TABLE clientes (
+    id_cliente INT AUTO_INCREMENT PRIMARY KEY,
+    tipo_documento ENUM('DNI', 'RUC', 'CE', 'PASAPORTE', 'OTRO') NOT NULL DEFAULT 'DNI',
+    numero_documento VARCHAR(25) NOT NULL UNIQUE,
+    nombre_razon_social VARCHAR(150) NOT NULL,
+    apellidos_representante VARCHAR(150) NULL,
+    telefono VARCHAR(25) NULL,
+    email VARCHAR(120) NULL,
+    direccion VARCHAR(255) NULL,
+    limite_credito DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    saldo_credito_actual DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_clientes_num_doc ON clientes(numero_documento);
+
+-- ------------------------------------------------------------------------------
+-- 6. TABLA: metodos_pago
+-- ------------------------------------------------------------------------------
+CREATE TABLE metodos_pago (
+    id_metodo_pago INT AUTO_INCREMENT PRIMARY KEY,
+    codigo VARCHAR(20) NOT NULL UNIQUE COMMENT 'EFECTIVO, TARJETA, YAPE, PLIN, TRANSFERENCIA',
+    nombre VARCHAR(50) NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE
+) ENGINE=InnoDB;
+
+-- ------------------------------------------------------------------------------
+-- 7. TABLA: ventas
+-- Cabecera fiscal de comprobantes (Boletas / Facturas / Notas de Venta)
+-- ------------------------------------------------------------------------------
+CREATE TABLE ventas (
+    id_venta INT AUTO_INCREMENT PRIMARY KEY,
+    numero_comprobante VARCHAR(30) NOT NULL UNIQUE COMMENT 'Ej: B004-001290 o F001-000492',
+    tipo_comprobante ENUM('BOLETA', 'FACTURA', 'NOTA_VENTA') NOT NULL DEFAULT 'BOLETA',
+    fecha_hora DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    id_cliente INT NOT NULL,
+    id_vendedor INT NOT NULL,
+    id_metodo_pago INT NOT NULL,
+    subtotal DECIMAL(10, 2) NOT NULL,
+    descuento DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    impuesto_igv DECIMAL(10, 2) NOT NULL DEFAULT 0.00 COMMENT '18% tasa peruana',
+    total DECIMAL(10, 2) NOT NULL,
+    monto_recibido DECIMAL(10, 2) NOT NULL,
+    vuelto DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    estado ENUM('EMITIDA', 'ANULADA') NOT NULL DEFAULT 'EMITIDA',
+    motivo_anulacion TEXT NULL,
+    id_admin_anulacion INT NULL,
+    fecha_anulacion DATETIME NULL,
+    hash_fiscal VARCHAR(64) NULL,
+    CONSTRAINT fk_ventas_cliente FOREIGN KEY (id_cliente) 
+        REFERENCES clientes(id_cliente) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_ventas_vendedor FOREIGN KEY (id_vendedor) 
+        REFERENCES usuarios(id_usuario) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_ventas_metodo FOREIGN KEY (id_metodo_pago) 
+        REFERENCES metodos_pago(id_metodo_pago) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_ventas_admin_anula FOREIGN KEY (id_admin_anulacion) 
+        REFERENCES usuarios(id_usuario) ON UPDATE CASCADE ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_ventas_fecha ON ventas(fecha_hora);
+CREATE INDEX idx_ventas_vendedor ON ventas(id_vendedor);
+CREATE INDEX idx_ventas_estado ON ventas(estado);
+
+-- ------------------------------------------------------------------------------
+-- 8. TABLA: detalle_ventas
+-- Líneas de producto vendidas por comprobante
+-- ------------------------------------------------------------------------------
+CREATE TABLE detalle_ventas (
+    id_detalle INT AUTO_INCREMENT PRIMARY KEY,
+    id_venta INT NOT NULL,
+    id_producto INT NOT NULL,
+    cantidad INT NOT NULL,
+    precio_unitario DECIMAL(10, 2) NOT NULL,
+    subtotal_linea DECIMAL(10, 2) NOT NULL,
+    CONSTRAINT fk_detalle_venta FOREIGN KEY (id_venta) 
+        REFERENCES ventas(id_venta) ON DELETE CASCADE,
+    CONSTRAINT fk_detalle_producto FOREIGN KEY (id_producto) 
+        REFERENCES productos(id_producto) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT chk_cantidad_pos CHECK (cantidad > 0)
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_detalle_id_venta ON detalle_ventas(id_venta);
+
+-- ------------------------------------------------------------------------------
+-- 9. TABLA: movimientos_inventario (KÁRDEX)
+-- Registro inmutable de trazabilidad de existencias físicas
+-- ------------------------------------------------------------------------------
+CREATE TABLE movimientos_inventario (
+    id_movimiento INT AUTO_INCREMENT PRIMARY KEY,
+    codigo_movimiento VARCHAR(30) NOT NULL UNIQUE,
+    fecha_hora DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    id_producto INT NOT NULL,
+    tipo_movimiento ENUM('ENTRADA', 'SALIDA', 'AJUSTE_POSITIVO', 'AJUSTE_NEGATIVO', 'DEVOLUCION') NOT NULL,
+    cantidad INT NOT NULL,
+    stock_anterior INT NOT NULL,
+    stock_resultante INT NOT NULL,
+    id_usuario INT NOT NULL,
+    motivo VARCHAR(255) NOT NULL,
+    observaciones TEXT NULL,
+    CONSTRAINT fk_kardex_producto FOREIGN KEY (id_producto) 
+        REFERENCES productos(id_producto) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_kardex_usuario FOREIGN KEY (id_usuario) 
+        REFERENCES usuarios(id_usuario) ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_kardex_producto ON movimientos_inventario(id_producto);
+CREATE INDEX idx_kardex_fecha ON movimientos_inventario(fecha_hora);
+
+-- ------------------------------------------------------------------------------
+-- 10. TABLA: auditoria_sistema
+-- Bitácora para cumplimiento y seguridad de acceso
+-- ------------------------------------------------------------------------------
+CREATE TABLE auditoria_sistema (
+    id_auditoria BIGINT AUTO_INCREMENT PRIMARY KEY,
+    fecha_hora DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    id_usuario INT NULL,
+    ip_origen VARCHAR(45) NOT NULL,
+    modulo VARCHAR(60) NOT NULL,
+    accion VARCHAR(100) NOT NULL,
+    descripcion TEXT NOT NULL,
+    resultado ENUM('EXITO', 'DENEGADO', 'ERROR') NOT NULL DEFAULT 'EXITO',
+    CONSTRAINT fk_auditoria_usuario FOREIGN KEY (id_usuario) 
+        REFERENCES usuarios(id_usuario) ON UPDATE CASCADE ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_auditoria_fecha ON auditoria_sistema(fecha_hora);
+
+-- ------------------------------------------------------------------------------
+-- 11. TABLA: configuracion_sistema
+-- Parámetros corporativos y fiscales del negocio
+-- ------------------------------------------------------------------------------
+CREATE TABLE configuracion_sistema (
+    id_config INT AUTO_INCREMENT PRIMARY KEY,
+    razon_social VARCHAR(150) NOT NULL,
+    nombre_comercial VARCHAR(150) NOT NULL,
+    ruc VARCHAR(20) NOT NULL,
+    direccion VARCHAR(255) NOT NULL,
+    telefono VARCHAR(30) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    tasa_igv DECIMAL(5, 2) NOT NULL DEFAULT 18.00,
+    moneda_simbolo VARCHAR(10) NOT NULL DEFAULT 'S/',
+    moneda_iso VARCHAR(10) NOT NULL DEFAULT 'PEN',
+    limite_boleta_sin_dni DECIMAL(10, 2) NOT NULL DEFAULT 700.00,
+    permitir_ventas_sin_stock BOOLEAN NOT NULL DEFAULT FALSE,
+    alerta_stock_minimo_defecto INT NOT NULL DEFAULT 10,
+    tiempo_expiracion_sesion_min INT NOT NULL DEFAULT 30,
+    serie_boleta_defecto VARCHAR(10) NOT NULL DEFAULT 'B004',
+    serie_factura_defecto VARCHAR(10) NOT NULL DEFAULT 'F001'
+) ENGINE=InnoDB;
+
+-- ==============================================================================
+-- INSERCIÓN DE DATOS INICIALES (SEMILLA DML)
+-- ==============================================================================
+
+-- 1. Roles del Sistema
+INSERT INTO roles (id_rol, nombre, descripcion) VALUES
+(1, 'ADMINISTRADOR', 'Acceso total a configuración, auditoría, usuarios, kárdex y reportes'),
+(2, 'VENDEDOR', 'Acceso exclusivo al Punto de Venta (POS), catálogo de precios y sus ventas');
+
+-- 2. Usuarios Iniciales (Contraseña temporal en hash SHA-256 para 'Admin123*': a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3)
+-- Multi-administradores y Vendedores de Caja
+INSERT INTO usuarios (id_usuario, nombres, apellidos, username, email, telefono, password_hash, id_rol, activo) VALUES
+(1, 'Carlos Eduardo', 'Mendoza Villar', 'carlos.mendoza', 'carlos.mendoza@bodegacontrol.pe', '+51 984 552 108', SHA2('Admin123*', 256), 1, TRUE),
+(2, 'Sofía', 'Valdivia Reyes', 'svaldivia', 's.valdivia@bodegacontrol.pe', '+51 971 204 891', SHA2('Admin123*', 256), 1, TRUE),
+(3, 'Luis', 'Torres Benítez', 'luis.torres', 'luis.torres@bodegacontrol.pe', '+51 987 654 321', SHA2('Vendedor123*', 256), 2, TRUE),
+(4, 'Elena', 'Ramos Castro', 'elena.ramos', 'elena.ramos@bodegacontrol.pe', '+51 942 390 114', SHA2('Vendedor123*', 256), 2, TRUE);
+
+-- 3. Configuración Inicial de la Empresa
+INSERT INTO configuracion_sistema (id_config, razon_social, nombre_comercial, ruc, direccion, telefono, email, tasa_igv, moneda_simbolo, limite_boleta_sin_dni) VALUES
+(1, 'COMERCIAL & BODEGA CONTROL S.A.C.', 'BodegaControl Express', '20608945231', 'Av. El Triunfo 450, Urb. San Isidro, Lima, Perú', '(01) 489-2210 / 998-124-553', 'administracion@bodegacontrol.pe', 18.00, 'S/', 700.00);
+
+-- 4. Métodos de Pago
+INSERT INTO metodos_pago (id_metodo_pago, codigo, nombre) VALUES
+(1, 'EFECTIVO', 'Efectivo en Soles (PEN)'),
+(2, 'TARJETA', 'Tarjeta Débito / Crédito (POS Izipay/Niubiz)'),
+(3, 'YAPE', 'Yape BCP Móvil'),
+(4, 'PLIN', 'Plin Interbancario'),
+(5, 'TRANSFERENCIA', 'Transferencia Bancaria BCP/BBVA');
+
+-- 5. Categorías
+INSERT INTO categorias (id_categoria, codigo, nombre, descripcion, icono_pos, margen_sugerido) VALUES
+(1, 'CAT-001', 'Bebidas y Licores', 'Gaseosas, jugos, aguas minerales, cervezas y licores', 'Bebidas', 28.00),
+(2, 'CAT-002', 'Abarrotes y Granos', 'Arroz, azúcar, fideos, aceites, harinas y menestras', 'Abarrotes', 22.50),
+(3, 'CAT-003', 'Lácteos y Embutidos', 'Leches, yogures, quesos, mantequillas y embutidos', 'Lácteos', 25.00),
+(4, 'CAT-004', 'Limpieza y Hogar', 'Detergentes, jabones, desinfectantes y papel higiénico', 'Limpieza', 32.00),
+(5, 'CAT-005', 'Snacks y Confitería', 'Galletas, chocolates, papas fritas y golosinas', 'Snacks', 35.00);
+
+-- 6. Productos Maestro
+INSERT INTO productos (id_producto, sku, codigo_barras, nombre, id_categoria, marca, precio_compra, precio_venta, stock_actual, stock_minimo, unidad_medida) VALUES
+(1, 'PROD-775010', '7750100000018', 'Aceite Primor Clásico 1L', 2, 'Primor', 6.80, 8.70, 46, 12, 'und'),
+(2, 'PROD-775012', '7750200008432', 'Arroz Costeño Extra 1kg', 2, 'Costeño', 3.70, 4.90, 115, 20, 'und'),
+(3, 'PROD-775014', '7750300001201', 'Gaseosa Inca Kola Sabor Original 1.5L', 1, 'Inca Kola', 4.80, 6.50, 12, 15, 'und'),
+(4, 'PROD-775022', '7750400003390', 'Atún Lomitos Campomar en Aceite', 2, 'Campomar', 4.20, 5.80, 57, 15, 'und'),
+(5, 'PROD-775005', '7750500009181', 'Leche Evaporada Gloria Entera 400g', 3, 'Gloria', 3.60, 4.71, 21, 24, 'und'),
+(6, 'PROD-775033', '7750600007721', 'Detergente Bolívar Blanco 800g', 4, 'Bolívar', 5.90, 7.80, 0, 10, 'und');
+
+-- 7. Clientes
+INSERT INTO clientes (id_cliente, tipo_documento, numero_documento, nombre_razon_social, apellidos_representante, telefono, email, direccion) VALUES
+(1, 'DNI', '00000000', 'Consumidor Final', 'Ventas Mostrador', '-', '-', 'Lima'),
+(2, 'DNI', '45892147', 'Juan Pérez', 'Quispe', '+51 971 204 891', 'juan.perez.q@gmail.com', 'Jr. Ayacucho 450 Dpto 301, Magdalena del Mar'),
+(3, 'RUC', '20601239841', 'Inversiones Gastronómicas S.A.C.', 'Juan Pérez Quispe', '+51 984 512 300', 'compras@gastronomica.pe', 'Av. La Marina 1420, San Miguel, Lima');
+
+-- 8. Movimiento Kárdex Inicial de Entrada
+INSERT INTO movimientos_inventario (codigo_movimiento, id_producto, tipo_movimiento, cantidad, stock_anterior, stock_resultante, id_usuario, motivo, observaciones) VALUES
+('MOV-2024-0001', 1, 'ENTRADA', 50, 0, 50, 1, 'Inventario Inicial de Apertura', 'Carga masiva por apertura de sucursal San Isidro'),
+('MOV-2024-0002', 2, 'ENTRADA', 120, 0, 120, 1, 'Inventario Inicial de Apertura', 'Carga masiva de abarrotes'),
+('MOV-2024-0003', 3, 'ENTRADA', 15, 0, 15, 1, 'Inventario Inicial de Apertura', 'Recepción de bebidas'),
+('MOV-2024-0004', 4, 'ENTRADA', 60, 0, 60, 1, 'Inventario Inicial de Apertura', 'Recepción conservas'),
+('MOV-2024-0005', 5, 'ENTRADA', 24, 0, 24, 1, 'Inventario Inicial de Apertura', 'Recepción lácteos');
+
+-- 9. Auditoría Inicial
+INSERT INTO auditoria_sistema (id_usuario, ip_origen, modulo, accion, descripcion, resultado) VALUES
+(1, '127.0.0.1', 'Configuración', 'Inicialización Base de Datos', 'Creación de esquema bodega_db y carga de catálogos base.', 'EXITO');

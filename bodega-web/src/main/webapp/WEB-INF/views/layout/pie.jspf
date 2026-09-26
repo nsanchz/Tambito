@@ -1,0 +1,177 @@
+<%@ page pageEncoding="UTF-8" %>
+    </main>
+</div>
+
+<script>
+    (function () {
+        var CLAVE_IGNORADOS = 'bodega_alertas_stock_ignoradas';
+        var contenedor = document.getElementById('contenedor-alertas-stock');
+        if (!contenedor) {
+            return;
+        }
+
+        function leerIgnorados() {
+            try {
+                return JSON.parse(localStorage.getItem(CLAVE_IGNORADOS)) || {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function guardarIgnorado(productoId, stockActual) {
+            var ignorados = leerIgnorados();
+            ignorados[productoId] = stockActual;
+            try {
+                localStorage.setItem(CLAVE_IGNORADOS, JSON.stringify(ignorados));
+            } catch (e) {
+                // Almacenamiento no disponible (modo privado); la alerta simplemente reaparecerá.
+            }
+            renderizarAlertas();
+        }
+
+        function fueIgnoradoConEsteStock(alerta) {
+            var ignorados = leerIgnorados();
+            var stockAlIgnorar = ignorados[alerta.productoId];
+            // Reaparece si el stock empeoró desde que se ignoró (bajó aún más).
+            return stockAlIgnorar !== undefined && alerta.stockActual >= stockAlIgnorar;
+        }
+
+        function crearTarjetaAlerta(alerta) {
+            var tarjeta = document.createElement('div');
+            tarjeta.className = 'bg-white border border-amber-300 shadow-lg rounded-xl p-4 flex flex-col gap-2 animate-[fadeIn_0.2s]';
+            tarjeta.innerHTML =
+                '<div class="flex items-start justify-between gap-2">' +
+                '  <div class="flex flex-col">' +
+                '    <span class="text-sm font-semibold text-slate-900">Stock bajo: ' + alerta.productoNombre + '</span>' +
+                '    <span class="text-xs text-slate-500">Quedan ' + alerta.stockActual + ' uds (mínimo ' + alerta.stockMinimo + ')</span>' +
+                '    <span class="text-xs text-slate-400">Proveedor: ' + alerta.proveedorNombre + '</span>' +
+                '  </div>' +
+                '  <span class="text-amber-500 text-lg leading-none">&#9888;</span>' +
+                '</div>' +
+                '<div class="flex items-center justify-end gap-2 pt-1">' +
+                '  <button type="button" data-accion="ignorar" class="text-xs px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600">Ignorar</button>' +
+                '  <button type="button" data-accion="pedir" class="text-xs px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium">Pedir producto</button>' +
+                '</div>';
+
+            tarjeta.querySelector('[data-accion="ignorar"]').addEventListener('click', function () {
+                guardarIgnorado(alerta.productoId, alerta.stockActual);
+            });
+            tarjeta.querySelector('[data-accion="pedir"]').addEventListener('click', function () {
+                var base = document.querySelector('meta[name="context-path"]').getAttribute('content');
+                window.location.href = base + '/ordenes-compra?productoId=' + alerta.productoId;
+            });
+
+            return tarjeta;
+        }
+
+        var ultimasAlertas = [];
+
+        function renderizarAlertas() {
+            contenedor.innerHTML = '';
+            var visibles = ultimasAlertas.filter(function (a) { return !fueIgnoradoConEsteStock(a); });
+            visibles.slice(0, 5).forEach(function (alerta) {
+                contenedor.appendChild(crearTarjetaAlerta(alerta));
+            });
+        }
+
+        function consultarAlertas() {
+            var base = document.querySelector('meta[name="context-path"]').getAttribute('content');
+            fetch(base + '/api/alertas-stock')
+                .then(function (r) { return r.ok ? r.json() : []; })
+                .then(function (alertas) {
+                    ultimasAlertas = alertas || [];
+                    renderizarAlertas();
+                })
+                .catch(function () { /* si falla, simplemente no se muestran alertas nuevas */ });
+        }
+
+        consultarAlertas();
+        setInterval(consultarAlertas, 60000);
+    })();
+
+    (function () {
+        var CLAVE_IGNORADOS = 'bodega_alertas_inventario_ignoradas';
+        var contenedor = document.getElementById('contenedor-alertas-inventario');
+        if (!contenedor) {
+            return;
+        }
+
+        function leerIgnorados() {
+            try {
+                return JSON.parse(localStorage.getItem(CLAVE_IGNORADOS)) || {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function cerrarAlerta(clave, valorSnapshot) {
+            var ignorados = leerIgnorados();
+            ignorados[clave] = valorSnapshot;
+            try {
+                localStorage.setItem(CLAVE_IGNORADOS, JSON.stringify(ignorados));
+            } catch (e) {
+                // Almacenamiento no disponible (modo privado); la alerta simplemente reaparecerá.
+            }
+            renderizar(ultimosDatos);
+        }
+
+        function fueCerradaConEsteValor(clave, valorActual) {
+            var ignorados = leerIgnorados();
+            return ignorados[clave] !== undefined && ignorados[clave] === valorActual;
+        }
+
+        function crearTarjeta(titulo, subtitulo, colorBorde, clave, valorSnapshot) {
+            var tarjeta = document.createElement('div');
+            tarjeta.className = 'bg-white border ' + colorBorde + ' shadow-lg rounded-xl p-4 flex flex-col gap-1 relative';
+            tarjeta.innerHTML =
+                '<button type="button" data-accion="cerrar" title="Cerrar alerta" ' +
+                'class="absolute top-2 right-2 text-slate-400 hover:text-slate-700 text-xs leading-none">&#10005;</button>' +
+                '<span class="text-sm font-semibold text-slate-900 pr-4">' + titulo + '</span>' +
+                '<span class="text-xs text-slate-500">' + subtitulo + '</span>';
+            tarjeta.querySelector('[data-accion="cerrar"]').addEventListener('click', function () {
+                cerrarAlerta(clave, valorSnapshot);
+            });
+            return tarjeta;
+        }
+
+        var ultimosDatos = {};
+
+        function renderizar(datos) {
+            ultimosDatos = datos || {};
+            contenedor.innerHTML = '';
+            (datos.porVencer || []).forEach(function (l) {
+                var clave = 'venc-' + l.loteId;
+                if (fueCerradaConEsteValor(clave, l.cantidadActual)) {
+                    return;
+                }
+                contenedor.appendChild(crearTarjeta(
+                    'Por vencer: ' + l.productoNombre,
+                    'Lote ' + l.numeroLote + ' vence el ' + l.fechaVencimiento + ' (' + l.cantidadActual + ' uds)',
+                    'border-red-300', clave, l.cantidadActual));
+            });
+            (datos.bajaRotacion || []).forEach(function (p) {
+                var clave = 'rot-' + p.productoId;
+                if (fueCerradaConEsteValor(clave, p.stockActual)) {
+                    return;
+                }
+                contenedor.appendChild(crearTarjeta(
+                    'Baja rotación: ' + p.productoNombre,
+                    'Sin ventas recientes · Stock actual: ' + p.stockActual + ' uds',
+                    'border-slate-300', clave, p.stockActual));
+            });
+        }
+
+        function consultarAlertasInventario() {
+            var base = document.querySelector('meta[name="context-path"]').getAttribute('content');
+            fetch(base + '/api/alertas-inventario')
+                .then(function (r) { return r.ok ? r.json() : {}; })
+                .then(renderizar)
+                .catch(function () { /* si falla, simplemente no se muestran alertas nuevas */ });
+        }
+
+        consultarAlertasInventario();
+        setInterval(consultarAlertasInventario, 60000);
+    })();
+</script>
+</body>
+</html>

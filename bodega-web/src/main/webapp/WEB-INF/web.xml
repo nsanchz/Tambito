@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee
+         https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+         version="6.0">
+
+    <display-name>Sistema de Gestión de Bodega</display-name>
+
+    <!-- Filtros de seguridad: el orden de declaración define el orden de ejecución.
+         1) SecurityHeadersFilter va primero: agrega cabeceras a TODA respuesta (pública o no).
+         2) AuthenticationFilter (verifica sesión) SIEMPRE antes que AuthorizationFilter (rol).
+         3) CsrfFilter va al final: para cuando llega aquí, la sesión y el rol ya son válidos;
+            su único trabajo es validar el token anti-falsificación de los POST. -->
+    <filter>
+        <filter-name>SecurityHeadersFilter</filter-name>
+        <filter-class>com.bodega.filter.SecurityHeadersFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>SecurityHeadersFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>AuthenticationFilter</filter-name>
+        <filter-class>com.bodega.filter.AuthenticationFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>AuthenticationFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>AuthorizationFilter</filter-name>
+        <filter-class>com.bodega.filter.AuthorizationFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>AuthorizationFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>CsrfFilter</filter-name>
+        <filter-class>com.bodega.filter.CsrfFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>CsrfFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <session-config>
+        <session-timeout>30</session-timeout>
+        <cookie-config>
+            <http-only>true</http-only>
+            <secure>true</secure>
+        </cookie-config>
+    </session-config>
+
+    <welcome-file-list>
+        <welcome-file>index.jsp</welcome-file>
+    </welcome-file-list>
+
+    <!-- Fuerza HTTPS en toda la aplicación: cualquier petición que llegue por el conector
+         HTTP (puerto 8080) es redirigida automáticamente por Tomcat al puerto HTTPS
+         configurado como "redirectPort" de ese conector (8443, ver server.xml). Es lo que
+         hace seguro el flag "secure" de la cookie de sesión de arriba: sin esto, esa cookie
+         jamás se enviaría de vuelta sobre HTTP y el login parecería fallar sin motivo. -->
+    <security-constraint>
+        <web-resource-collection>
+            <web-resource-name>Toda la aplicación</web-resource-name>
+            <url-pattern>/*</url-pattern>
+        </web-resource-collection>
+        <user-data-constraint>
+            <transport-guarantee>CONFIDENTIAL</transport-guarantee>
+        </user-data-constraint>
+    </security-constraint>
+
+    <!-- Páginas de error personalizadas (en español) -->
+    <error-page>
+        <error-code>404</error-code>
+        <location>/WEB-INF/views/errores/error-404.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>403</error-code>
+        <location>/WEB-INF/views/errores/error-403.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>500</error-code>
+        <location>/WEB-INF/views/errores/error-500.jsp</location>
+    </error-page>
+    <error-page>
+        <exception-type>java.lang.Exception</exception-type>
+        <location>/WEB-INF/views/errores/error-500.jsp</location>
+    </error-page>
+
+</web-app>

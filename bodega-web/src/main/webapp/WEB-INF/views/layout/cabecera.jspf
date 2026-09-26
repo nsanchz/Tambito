@@ -1,0 +1,75 @@
+<%@ page pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><c:out value="${tituloPagina}"/> - <c:out value="${sessionScope.nombreEmpresa}" default="BodegaControl"/></title>
+    <meta name="context-path" content="${pageContext.request.contextPath}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/estilos.css">
+</head>
+<body class="bg-slate-50 text-slate-900 antialiased">
+
+<aside class="fixed left-0 top-0 h-screen w-64 bg-slate-900 text-white flex flex-col justify-between z-40">
+    <div class="flex flex-col">
+        <div class="h-14 px-4 flex items-center gap-2 bg-black/20">
+            <img src="${pageContext.request.contextPath}/imagen?tipo=logo" alt="Logo"
+                 class="h-7 w-7 rounded object-cover" onerror="this.style.display='none'">
+            <span class="font-bold text-lg truncate"><c:out value="${sessionScope.nombreEmpresa}" default="BodegaControl"/></span>
+        </div>
+        <nav class="px-2 py-3 flex flex-col gap-1">
+            <a href="${pageContext.request.contextPath}/panel-de-control"
+               class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'panel-de-control' ? 'bg-blue-600 font-medium' : ''}">Panel de control</a>
+            <a href="${pageContext.request.contextPath}/pos"
+               class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'pos' ? 'bg-blue-600 font-medium' : ''}">Punto de Venta (POS)</a>
+            <a href="${pageContext.request.contextPath}/turno-caja"
+               class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'turno-caja' ? 'bg-blue-600 font-medium' : ''}">Turno de Caja</a>
+            <a href="${pageContext.request.contextPath}/ventas"
+               class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'ventas' ? 'bg-blue-600 font-medium' : ''}">Ventas</a>
+            <a href="${pageContext.request.contextPath}/productos"
+               class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'productos' ? 'bg-blue-600 font-medium' : ''}">Productos</a>
+            <a href="${pageContext.request.contextPath}/inventario"
+               class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'inventario' ? 'bg-blue-600 font-medium' : ''}">Inventario</a>
+            <a href="${pageContext.request.contextPath}/proveedores"
+               class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'proveedores' ? 'bg-blue-600 font-medium' : ''}">Proveedores</a>
+            <a href="${pageContext.request.contextPath}/ordenes-compra"
+               class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'ordenes-compra' ? 'bg-blue-600 font-medium' : ''}">Órdenes de compra</a>
+            <a href="${pageContext.request.contextPath}/categorias"
+               class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'categorias' ? 'bg-blue-600 font-medium' : ''}">Categorías</a>
+            <a href="${pageContext.request.contextPath}/clientes"
+               class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'clientes' ? 'bg-blue-600 font-medium' : ''}">Clientes</a>
+            <c:if test="${sessionScope.usuarioRol == 'ADMINISTRADOR'}">
+                <a href="${pageContext.request.contextPath}/usuarios"
+                   class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'usuarios' ? 'bg-blue-600 font-medium' : ''}">Usuarios</a>
+                <a href="${pageContext.request.contextPath}/reportes"
+                   class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'reportes' ? 'bg-blue-600 font-medium' : ''}">Reportes</a>
+                <a href="${pageContext.request.contextPath}/auditoria"
+                   class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'auditoria' ? 'bg-blue-600 font-medium' : ''}">Auditoría</a>
+                <a href="${pageContext.request.contextPath}/respaldos"
+                   class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'respaldos' ? 'bg-blue-600 font-medium' : ''}">Respaldos</a>
+                <a href="${pageContext.request.contextPath}/configuracion"
+                   class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'configuracion' ? 'bg-blue-600 font-medium' : ''}">Configuración</a>
+            </c:if>
+        </nav>
+    </div>
+</aside>
+
+<div class="pl-64">
+    <header class="fixed top-0 left-64 right-0 h-14 bg-white shadow-sm z-30 flex items-center justify-between px-6">
+        <h1 class="text-sm font-medium text-slate-500"><c:out value="${tituloPagina}"/></h1>
+        <div class="flex items-center gap-4">
+            <span class="text-sm font-medium"><c:out value="${sessionScope.usuarioNombre}"/></span>
+            <a href="${pageContext.request.contextPath}/perfil" title="Mi perfil" class="text-slate-500 hover:text-slate-900">Perfil</a>
+            <a href="${pageContext.request.contextPath}/logout" title="Cerrar sesión" class="text-red-600 hover:text-red-800">Salir</a>
+        </div>
+    </header>
+
+    <!-- Widgets flotantes de alertas: stock bajo (/api/alertas-stock) y vencimiento/rotación (/api/alertas-inventario) -->
+    <div class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 w-80">
+        <div id="contenedor-alertas-inventario" class="flex flex-col gap-2"></div>
+        <div id="contenedor-alertas-stock" class="flex flex-col gap-2"></div>
+    </div>
+
+    <main class="pt-14 px-6 py-6 min-h-screen">
