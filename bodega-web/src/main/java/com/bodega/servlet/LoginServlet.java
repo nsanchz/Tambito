@@ -91,32 +91,20 @@ public class LoginServlet extends HttpServlet {
 
             switch (respuesta.resultado) {
                 case EXITO -> {
+                    LoginSessionHelper.abrirSesionCompleta(req, respuesta.usuario, terminalId, obtenerNombreEmpresa(), ip);
+                    LoginSessionHelper.redirigirTrasLogin(req, resp, respuesta.usuario);
+                }
+                case REQUIERE_MFA -> {
+                    // Contraseña correcta, pero falta el segundo factor: se abre una sesión
+                    // "pendiente" de corta duración, SIN atributos de sesión real, para que
+                    // AuthenticationFilter siga bloqueando cualquier ruta protegida hasta que
+                    // se complete /login-mfa.
                     HttpSession session = req.getSession(true);
-                    session.setAttribute(Constantes.SESSION_USUARIO_ID, respuesta.usuario.getId());
-                    session.setAttribute(Constantes.SESSION_USUARIO_NOMBRE, respuesta.usuario.getNombreCompleto());
-                    session.setAttribute(Constantes.SESSION_USUARIO_ROL, respuesta.usuario.getRol().name());
+                    session.setAttribute(Constantes.SESSION_MFA_PENDIENTE_USUARIO_ID, respuesta.usuario.getId());
+                    session.setAttribute(Constantes.SESSION_MFA_PENDIENTE_EXPIRA,
+                            LocalDateTime.now().plusMinutes(Constantes.MFA_PENDIENTE_MINUTOS));
                     session.setAttribute(Constantes.SESSION_TERMINAL_ID, terminalId);
-                    session.setAttribute(Constantes.SESSION_NOMBRE_EMPRESA, obtenerNombreEmpresa());
-
-                    // Timeout de sesión diferenciado por rol (ver Configuración del Sistema):
-                    // el valor fijo de web.xml es solo el máximo por defecto; aquí se ajusta
-                    // por sesión según el rol real del usuario que acaba de autenticarse.
-                    try {
-                        int minutos = configuracionService.obtenerTimeoutSesionMinutos(respuesta.usuario.getRol());
-                        session.setMaxInactiveInterval(minutos * 60);
-                    } catch (SQLException e) {
-                        // Si falla la consulta del parámetro, se conserva el timeout por defecto
-                        // de web.xml en vez de impedir el inicio de sesión por esto.
-                    }
-
-                    auditoriaService.registrar(respuesta.usuario.getId(), "LOGIN_EXITOSO", "USUARIO",
-                            respuesta.usuario.getId(), "Inicio de sesión desde terminal " + terminalId, ip);
-
-                    if (respuesta.usuario.isDebeCambiarPassword()) {
-                        resp.sendRedirect(req.getContextPath() + "/perfil?cambioObligatorio=true");
-                    } else {
-                        resp.sendRedirect(req.getContextPath() + "/panel-de-control");
-                    }
+                    resp.sendRedirect(req.getContextPath() + "/login-mfa");
                 }
                 case CREDENCIALES_INVALIDAS -> {
                     auditoriaService.registrar(null, "LOGIN_FALLIDO", "USUARIO", null,

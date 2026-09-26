@@ -60,6 +60,7 @@
                     <th class="px-4 py-3">Teléfono</th>
                     <th class="px-4 py-3">Rol</th>
                     <th class="px-4 py-3">Estado</th>
+                    <th class="px-4 py-3">MFA</th>
                     <th class="px-4 py-3">Último acceso</th>
                     <th class="px-4 py-3 text-right">Acciones</th>
                 </tr>
@@ -85,6 +86,19 @@
                                     Bloqueada
                                 </span>
                             </c:if>
+                        </td>
+                        <td class="px-4 py-3">
+                            <c:choose>
+                                <c:when test="${u.mfaHabilitado}">
+                                    <span class="px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-700">Activo</span>
+                                </c:when>
+                                <c:when test="${not empty u.mfaSecret}">
+                                    <span class="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700" title="El QR fue generado pero aún no se confirmó con el primer código">Pendiente</span>
+                                </c:when>
+                                <c:otherwise>
+                                    <span class="px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-500">Inactivo</span>
+                                </c:otherwise>
+                            </c:choose>
                         </td>
                         <td class="px-4 py-3 text-slate-500">
                             <c:choose>
@@ -113,6 +127,29 @@
                                     <input type="hidden" name="usuarioId" value="${u.id}">
                                     <button type="submit" class="text-slate-500 hover:text-blue-600" title="Restablecer contraseña">Clave</button>
                                 </form>
+                                <c:choose>
+                                    <c:when test="${u.mfaHabilitado}">
+                                        <form method="post" action="${pageContext.request.contextPath}/usuarios" class="inline"
+                                              onsubmit="return confirm('¿Desactivar el MFA de ${fn:escapeXml(u.nombreCompleto)}? Deberá volver a escanear un QR nuevo si se reactiva.');">
+                                            <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+                                            <input type="hidden" name="accion" value="desactivarMfa">
+                                            <input type="hidden" name="usuarioId" value="${u.id}">
+                                            <button type="submit" class="text-slate-500 hover:text-red-600" title="Desactivar MFA">MFA: quitar</button>
+                                        </form>
+                                    </c:when>
+                                    <c:when test="${not empty u.mfaSecret}">
+                                        <a href="${pageContext.request.contextPath}/usuarios?mfaSetup=${u.id}"
+                                           class="text-amber-600 hover:text-amber-700" title="Continuar activación pendiente (ver QR de nuevo)">MFA: ver QR</a>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <form method="post" action="${pageContext.request.contextPath}/usuarios" class="inline">
+                                            <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+                                            <input type="hidden" name="accion" value="activarMfa">
+                                            <input type="hidden" name="usuarioId" value="${u.id}">
+                                            <button type="submit" class="text-slate-500 hover:text-emerald-600" title="Activar MFA (Google Authenticator)">MFA: activar</button>
+                                        </form>
+                                    </c:otherwise>
+                                </c:choose>
                                 <form method="post" action="${pageContext.request.contextPath}/usuarios" class="inline">
                                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                     <input type="hidden" name="accion" value="cambiarEstado">
@@ -127,7 +164,7 @@
                     </tr>
                 </c:forEach>
                 <c:if test="${empty usuarios}">
-                    <tr><td colspan="8" class="px-4 py-6 text-center text-slate-400">No se encontraron usuarios con los filtros aplicados.</td></tr>
+                    <tr><td colspan="9" class="px-4 py-6 text-center text-slate-400">No se encontraron usuarios con los filtros aplicados.</td></tr>
                 </c:if>
                 </tbody>
             </table>
@@ -254,6 +291,51 @@
         </form>
     </div>
 </div>
+
+<!-- Modal: Activación de MFA (QR pendiente de confirmar) -->
+<c:if test="${not empty mfaSetupQrDataUri}">
+    <div id="modal-mfa-setup" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div class="bg-white w-full max-w-md rounded-xl shadow-xl overflow-hidden">
+            <div class="px-6 py-4 bg-slate-50 flex items-center justify-between">
+                <h3 class="font-semibold">Activar MFA — escanee el código QR</h3>
+                <a href="${pageContext.request.contextPath}/usuarios" class="text-slate-400 hover:text-slate-700">Cerrar</a>
+            </div>
+            <div class="p-6 flex flex-col items-center gap-4">
+                <p class="text-sm text-slate-600 text-center">
+                    Pídale al usuario que abra <strong>Google Authenticator</strong> y escanee este código
+                    <strong>en este momento</strong>, delante de usted. El código no se volverá a mostrar
+                    una vez confirmado.
+                </p>
+                <img src="${mfaSetupQrDataUri}" alt="Código QR de activación de MFA" class="border border-slate-200 rounded-lg" width="220" height="220">
+                <details class="text-xs text-slate-500 w-full">
+                    <summary class="cursor-pointer">¿No puede escanear? Ingreso manual</summary>
+                    <code class="block mt-1 p-2 bg-slate-100 rounded break-all"><c:out value="${mfaSetupOtpAuthUri}"/></code>
+                </details>
+
+                <c:if test="${not empty sessionScope.error}">
+                    <div class="w-full bg-red-50 border border-red-200 text-red-700 rounded-lg p-3 text-sm">
+                        <c:out value="${sessionScope.error}"/>
+                    </div>
+                    <c:remove var="error" scope="session"/>
+                </c:if>
+
+                <form method="post" action="${pageContext.request.contextPath}/usuarios" class="w-full flex flex-col gap-3">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+                    <input type="hidden" name="accion" value="confirmarMfa">
+                    <input type="hidden" name="usuarioId" value="${mfaSetupUsuarioId}">
+                    <div class="flex flex-col gap-1">
+                        <label class="text-sm font-medium">Código de 6 dígitos mostrado en la app</label>
+                        <input type="text" name="codigo" inputmode="numeric" pattern="\d{6}" maxlength="6" required autofocus
+                               class="h-10 px-3 border border-slate-300 rounded-lg text-sm text-center tracking-widest text-lg">
+                    </div>
+                    <button type="submit" class="h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">
+                        Confirmar y activar MFA
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</c:if>
 
 <script>
     function alternarVisibilidadPassword(idCampo, boton) {

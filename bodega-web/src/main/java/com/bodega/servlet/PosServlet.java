@@ -103,7 +103,14 @@ public class PosServlet extends HttpServlet {
                 return;
             }
 
-            Integer clienteId = resolverCliente(req);
+            Integer clienteId;
+            try {
+                clienteId = resolverCliente(req);
+            } catch (ClienteInvalidoException e) {
+                req.getSession().setAttribute(Constantes.ATTR_ERROR, e.getMessage());
+                resp.sendRedirect(req.getContextPath() + "/pos");
+                return;
+            }
 
             String[] productoIds = req.getParameterValues("carritoProductoId");
             String[] cantidades = req.getParameterValues("carritoCantidad");
@@ -147,7 +154,7 @@ public class PosServlet extends HttpServlet {
      * @return id del cliente a asociar a la venta, o {@code null} para "Cliente varios"
      * @throws SQLException si falla la consulta o el registro del cliente nuevo
      */
-    private Integer resolverCliente(HttpServletRequest req) throws SQLException {
+    private Integer resolverCliente(HttpServletRequest req) throws SQLException, ClienteInvalidoException {
         String tipoCliente = req.getParameter("clienteTipo");
         if (!"registrado".equals(tipoCliente)) {
             return null;
@@ -168,10 +175,24 @@ public class PosServlet extends HttpServlet {
         nuevo.setTipoDocumento(TipoDocumentoCliente.valueOf(req.getParameter("clienteTipoDocumento")));
         nuevo.setNumeroDocumento(numeroDocumento);
         nuevo.setNombreCompleto(req.getParameter("clienteNombre"));
+        nuevo.setCorreo(req.getParameter("clienteCorreo"));
         nuevo.setTelefono(req.getParameter("clienteTelefono"));
 
         var resultado = clienteService.registrar(nuevo);
-        return resultado.exitoso ? resultado.clienteId : null;
+        if (!resultado.exitoso) {
+            // No se degrada en silencio a "Cliente varios": si el cajero marcó "Cliente
+            // registrado" pero los datos no son válidos (ej. falta el correo), se corta la
+            // venta con un mensaje claro en vez de asociarla a nadie sin que nadie lo note.
+            throw new ClienteInvalidoException(resultado.mensaje);
+        }
+        return resultado.clienteId;
+    }
+
+    /** Datos de "Cliente registrado" inválidos al intentar crear el cliente desde el POS. */
+    static class ClienteInvalidoException extends Exception {
+        ClienteInvalidoException(String mensaje) {
+            super(mensaje);
+        }
     }
 
     /**

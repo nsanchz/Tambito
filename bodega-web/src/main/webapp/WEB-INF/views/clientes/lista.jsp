@@ -129,7 +129,7 @@
                 <input type="hidden" name="clienteId" value="${clienteSeleccionado.id}">
                 <input type="text" name="nombreCompleto" value="${clienteSeleccionado.nombreCompleto}" placeholder="Nombre completo" class="h-9 px-3 border border-slate-300 rounded-lg text-sm">
                 <input type="tel" name="telefono" value="${clienteSeleccionado.telefono}" placeholder="Teléfono" class="h-9 px-3 border border-slate-300 rounded-lg text-sm">
-                <input type="email" name="correo" value="${clienteSeleccionado.correo}" placeholder="Correo" class="h-9 px-3 border border-slate-300 rounded-lg text-sm">
+                <input type="email" name="correo" value="${clienteSeleccionado.correo}" placeholder="Correo *" required class="h-9 px-3 border border-slate-300 rounded-lg text-sm">
                 <input type="text" name="direccion" value="${clienteSeleccionado.direccion}" placeholder="Dirección" class="h-9 px-3 border border-slate-300 rounded-lg text-sm">
                 <div class="col-span-2 flex justify-end">
                     <button type="submit" class="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">Actualizar datos</button>
@@ -176,36 +176,45 @@
             <button type="button" onclick="document.getElementById('modal-nuevo-cliente').classList.add('hidden')"
                     class="text-slate-400 hover:text-slate-700">Cerrar</button>
         </div>
-        <form method="post" action="${pageContext.request.contextPath}/clientes" class="p-6 flex flex-col gap-4">
+        <form method="post" action="${pageContext.request.contextPath}/clientes" class="p-6 flex flex-col gap-4" id="form-nuevo-cliente">
             <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
             <input type="hidden" name="accion" value="crear">
             <div class="grid grid-cols-2 gap-4">
                 <div class="flex flex-col gap-1">
                     <label class="text-sm font-medium">Tipo de documento</label>
-                    <select name="tipoDocumento" class="h-9 px-3 border border-slate-300 rounded-lg text-sm">
+                    <select name="tipoDocumento" id="nc-tipo-documento" class="h-9 px-3 border border-slate-300 rounded-lg text-sm">
                         <option value="DNI">DNI</option>
                         <option value="RUC">RUC</option>
                     </select>
                 </div>
                 <div class="flex flex-col gap-1">
                     <label class="text-sm font-medium">N° de documento *</label>
-                    <input type="text" name="numeroDocumento" required class="h-9 px-3 border border-slate-300 rounded-lg text-sm">
+                    <div class="flex gap-2">
+                        <input type="text" name="numeroDocumento" id="nc-numero-documento" required
+                               inputmode="numeric" class="h-9 px-3 border border-slate-300 rounded-lg text-sm flex-1">
+                        <button type="button" id="nc-btn-buscar" onclick="buscarDocumentoCliente()"
+                                class="h-9 px-3 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-medium whitespace-nowrap">
+                            Buscar
+                        </button>
+                    </div>
+                    <span id="nc-mensaje-busqueda" class="text-xs text-slate-500"></span>
                 </div>
                 <div class="col-span-2 flex flex-col gap-1">
                     <label class="text-sm font-medium">Nombre completo / Razón social *</label>
-                    <input type="text" name="nombreCompleto" required class="h-9 px-3 border border-slate-300 rounded-lg text-sm">
+                    <input type="text" name="nombreCompleto" id="nc-nombre" required class="h-9 px-3 border border-slate-300 rounded-lg text-sm">
                 </div>
                 <div class="flex flex-col gap-1">
                     <label class="text-sm font-medium">Teléfono</label>
                     <input type="tel" name="telefono" class="h-9 px-3 border border-slate-300 rounded-lg text-sm">
                 </div>
                 <div class="flex flex-col gap-1">
-                    <label class="text-sm font-medium">Correo</label>
-                    <input type="email" name="correo" class="h-9 px-3 border border-slate-300 rounded-lg text-sm">
+                    <label class="text-sm font-medium">Correo *</label>
+                    <input type="email" name="correo" required class="h-9 px-3 border border-slate-300 rounded-lg text-sm">
+                    <span class="text-xs text-slate-400">Obligatorio: se usa para enviarle la boleta de cada compra.</span>
                 </div>
                 <div class="col-span-2 flex flex-col gap-1">
                     <label class="text-sm font-medium">Dirección</label>
-                    <input type="text" name="direccion" class="h-9 px-3 border border-slate-300 rounded-lg text-sm">
+                    <input type="text" name="direccion" id="nc-direccion" class="h-9 px-3 border border-slate-300 rounded-lg text-sm">
                 </div>
             </div>
             <div class="flex items-center justify-end gap-3 pt-2">
@@ -216,5 +225,63 @@
         </form>
     </div>
 </div>
+
+<script>
+    var CTX_PATH = '${pageContext.request.contextPath}';
+
+    function buscarDocumentoCliente() {
+        var tipo = document.getElementById('nc-tipo-documento').value;
+        var numero = document.getElementById('nc-numero-documento').value.trim();
+        var mensaje = document.getElementById('nc-mensaje-busqueda');
+        var boton = document.getElementById('nc-btn-buscar');
+
+        var formatoValido = tipo === 'DNI' ? /^\d{8}$/.test(numero) : /^\d{11}$/.test(numero);
+        if (!formatoValido) {
+            mensaje.textContent = tipo === 'DNI' ? 'El DNI debe tener 8 dígitos.' : 'El RUC debe tener 11 dígitos.';
+            mensaje.className = 'text-xs text-red-600';
+            return;
+        }
+
+        boton.disabled = true;
+        boton.textContent = 'Buscando...';
+        mensaje.textContent = '';
+
+        fetch(CTX_PATH + '/api/consulta-documento?numero=' + encodeURIComponent(numero) + '&tipo=' + tipo)
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.encontrado) {
+                    document.getElementById('nc-nombre').value = data.nombre || '';
+                    if (data.direccion) {
+                        document.getElementById('nc-direccion').value = data.direccion;
+                    }
+                    mensaje.textContent = 'Datos encontrados. Puede corregirlos si hace falta.';
+                    mensaje.className = 'text-xs text-emerald-600';
+                } else {
+                    mensaje.textContent = data.mensaje || 'No se encontró información. Complete los datos manualmente.';
+                    mensaje.className = 'text-xs text-slate-500';
+                }
+            })
+            .catch(function () {
+                mensaje.textContent = 'No se pudo consultar en este momento. Complete los datos manualmente.';
+                mensaje.className = 'text-xs text-slate-500';
+            })
+            .finally(function () {
+                boton.disabled = false;
+                boton.textContent = 'Buscar';
+            });
+    }
+
+    // Deshabilita el botón "Buscar" mientras el formato no calce con el tipo elegido, para no
+    // gastar cuota de la API en documentos obviamente inválidos.
+    function actualizarEstadoBotonBuscar() {
+        var tipo = document.getElementById('nc-tipo-documento').value;
+        var numero = document.getElementById('nc-numero-documento').value.trim();
+        var formatoValido = tipo === 'DNI' ? /^\d{8}$/.test(numero) : /^\d{11}$/.test(numero);
+        document.getElementById('nc-btn-buscar').disabled = !formatoValido;
+    }
+    document.getElementById('nc-tipo-documento').addEventListener('change', actualizarEstadoBotonBuscar);
+    document.getElementById('nc-numero-documento').addEventListener('input', actualizarEstadoBotonBuscar);
+    actualizarEstadoBotonBuscar();
+</script>
 
 <%@ include file="/WEB-INF/views/layout/pie.jspf" %>

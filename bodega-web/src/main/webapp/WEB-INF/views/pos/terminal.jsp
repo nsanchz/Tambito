@@ -52,12 +52,19 @@
                 </label>
             </div>
             <div id="campos-cliente" class="hidden flex-col gap-2">
-                <select name="clienteTipoDocumento" class="h-8 px-2 border border-slate-300 rounded-lg text-xs">
+                <select name="clienteTipoDocumento" id="pos-tipo-documento" class="h-8 px-2 border border-slate-300 rounded-lg text-xs">
                     <option value="DNI">DNI</option>
                     <option value="RUC">RUC</option>
                 </select>
-                <input type="text" name="clienteNumeroDocumento" placeholder="N° de documento" class="h-8 px-2 border border-slate-300 rounded-lg text-xs">
-                <input type="text" name="clienteNombre" placeholder="Nombre / Razón social" class="h-8 px-2 border border-slate-300 rounded-lg text-xs">
+                <div class="flex gap-1">
+                    <input type="text" name="clienteNumeroDocumento" id="pos-numero-documento" placeholder="N° de documento"
+                           inputmode="numeric" class="h-8 px-2 border border-slate-300 rounded-lg text-xs flex-1">
+                    <button type="button" id="pos-btn-buscar" onclick="buscarDocumentoClientePos()"
+                            class="h-8 px-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-medium whitespace-nowrap">Buscar</button>
+                </div>
+                <span id="pos-mensaje-busqueda" class="text-xs text-slate-500"></span>
+                <input type="text" name="clienteNombre" id="pos-nombre" placeholder="Nombre / Razón social" class="h-8 px-2 border border-slate-300 rounded-lg text-xs">
+                <input type="email" name="clienteCorreo" id="pos-correo" placeholder="Correo (para enviar la boleta) *" class="h-8 px-2 border border-slate-300 rounded-lg text-xs">
                 <input type="tel" name="clienteTelefono" placeholder="Teléfono (opcional)" class="h-8 px-2 border border-slate-300 rounded-lg text-xs">
             </div>
         </div>
@@ -241,13 +248,51 @@
         var clienteTipo = document.querySelector('input[name="clienteTipo"]:checked').value;
         agregarCampoOculto('clienteTipo', clienteTipo);
         if (clienteTipo === 'registrado') {
-            ['clienteTipoDocumento', 'clienteNumeroDocumento', 'clienteNombre', 'clienteTelefono'].forEach(function (campo) {
+            ['clienteTipoDocumento', 'clienteNumeroDocumento', 'clienteNombre', 'clienteCorreo', 'clienteTelefono'].forEach(function (campo) {
                 var el = document.querySelector('[name="' + campo + '"]');
                 agregarCampoOculto(campo, el ? el.value : '');
             });
         }
 
         form.submit();
+    }
+
+    function buscarDocumentoClientePos() {
+        var tipo = document.getElementById('pos-tipo-documento').value;
+        var numero = document.getElementById('pos-numero-documento').value.trim();
+        var mensaje = document.getElementById('pos-mensaje-busqueda');
+        var boton = document.getElementById('pos-btn-buscar');
+
+        var formatoValido = tipo === 'DNI' ? /^\d{8}$/.test(numero) : /^\d{11}$/.test(numero);
+        if (!formatoValido) {
+            mensaje.textContent = tipo === 'DNI' ? 'El DNI debe tener 8 dígitos.' : 'El RUC debe tener 11 dígitos.';
+            mensaje.className = 'text-xs text-red-600';
+            return;
+        }
+
+        boton.disabled = true;
+        boton.textContent = '...';
+
+        fetch('${pageContext.request.contextPath}/api/consulta-documento?numero=' + encodeURIComponent(numero) + '&tipo=' + tipo)
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.encontrado) {
+                    document.getElementById('pos-nombre').value = data.nombre || '';
+                    mensaje.textContent = 'Datos encontrados.';
+                    mensaje.className = 'text-xs text-emerald-600';
+                } else {
+                    mensaje.textContent = data.mensaje || 'No se encontró información. Complete los datos manualmente.';
+                    mensaje.className = 'text-xs text-slate-500';
+                }
+            })
+            .catch(function () {
+                mensaje.textContent = 'No se pudo consultar en este momento.';
+                mensaje.className = 'text-xs text-slate-500';
+            })
+            .finally(function () {
+                boton.disabled = false;
+                boton.textContent = 'Buscar';
+            });
     }
 
     document.addEventListener('keydown', function (e) {

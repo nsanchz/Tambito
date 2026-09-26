@@ -23,7 +23,15 @@ CREATE TABLE usuarios (
     ultimo_acceso          DATETIME      NULL,
     fecha_creacion         DATETIME      NOT NULL,
     creado_por_id          INT           NULL,
-    CONSTRAINT fk_usuario_creado_por FOREIGN KEY (creado_por_id) REFERENCES usuarios (id)
+    -- MFA (TOTP / Google Authenticator): activación y baja son exclusivas del administrador,
+    -- nunca autoservicio. mfa_secret va cifrado con CifradoUtil (AES-256-GCM), igual que
+    -- clientes.direccion. Sin secreto en claro ni tabla de códigos de recuperación autoservicio.
+    mfa_habilitado         BOOLEAN       NOT NULL DEFAULT FALSE,
+    mfa_secret             VARCHAR(255)  NULL,
+    mfa_activado_por_id    INT           NULL,
+    mfa_fecha_activacion   DATETIME      NULL,
+    CONSTRAINT fk_usuario_creado_por FOREIGN KEY (creado_por_id) REFERENCES usuarios (id),
+    CONSTRAINT fk_usuario_mfa_activado_por FOREIGN KEY (mfa_activado_por_id) REFERENCES usuarios (id)
 ) ENGINE = InnoDB;
 
 CREATE INDEX idx_usuarios_rol ON usuarios (rol);
@@ -235,6 +243,17 @@ CREATE TABLE clientes (
     estado            ENUM('ACTIVO', 'INACTIVO') NOT NULL DEFAULT 'ACTIVO',
     puntos_fidelizacion INT         NOT NULL DEFAULT 0,
     fecha_creacion    DATETIME      NOT NULL
+) ENGINE = InnoDB;
+
+-- Caché de resultados de la consulta externa de RUC/DNI (apisperu.com), para no repetir
+-- llamadas al mismo número y cuidar la cuota gratuita del servicio de terceros. Solo guarda
+-- datos ya públicos (nombre/razón social, dirección de RUC), nunca el token de la API.
+CREATE TABLE cache_consulta_documento (
+    numero_documento     VARCHAR(20) PRIMARY KEY,
+    tipo_documento       ENUM('DNI', 'RUC') NOT NULL,
+    nombre_o_razon_social VARCHAR(255) NOT NULL,
+    direccion            VARCHAR(500) NULL,
+    fecha_consulta       DATETIME     NOT NULL
 ) ENGINE = InnoDB;
 
 -- =====================================================================

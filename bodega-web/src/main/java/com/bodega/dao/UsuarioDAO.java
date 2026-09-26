@@ -369,6 +369,72 @@ public class UsuarioDAO {
         int creadoPorId = rs.getInt("creado_por_id");
         u.setCreadoPorId(rs.wasNull() ? null : creadoPorId);
 
+        u.setMfaHabilitado(rs.getBoolean("mfa_habilitado"));
+        u.setMfaSecret(rs.getString("mfa_secret"));
+
+        int mfaActivadoPorId = rs.getInt("mfa_activado_por_id");
+        u.setMfaActivadoPorId(rs.wasNull() ? null : mfaActivadoPorId);
+
+        Timestamp mfaFechaActivacion = rs.getTimestamp("mfa_fecha_activacion");
+        u.setMfaFechaActivacion(mfaFechaActivacion != null ? mfaFechaActivacion.toLocalDateTime() : null);
+
         return u;
+    }
+
+    /**
+     * Guarda el secreto TOTP (ya cifrado con {@link com.bodega.util.CifradoUtil}) generado para
+     * un usuario, en estado "pendiente de confirmación": {@code mfa_habilitado} se mantiene en
+     * FALSE hasta que {@link #confirmarMfa} valide el primer código ingresado.
+     *
+     * @param id               id del usuario
+     * @param secretoCifrado   secreto TOTP cifrado (AES-256-GCM), nunca en claro
+     * @throws SQLException si falla la actualización
+     */
+    public void guardarSecretoMfaPendiente(int id, String secretoCifrado) throws SQLException {
+        String sql = "UPDATE usuarios SET mfa_secret = ?, mfa_habilitado = FALSE, " +
+                "mfa_activado_por_id = NULL, mfa_fecha_activacion = NULL WHERE id = ?";
+        try (Connection con = DatabaseConfig.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, secretoCifrado);
+            ps.setInt(2, id);
+            ps.executeUpdate();
+        }
+    }
+
+    /**
+     * Confirma el MFA de un usuario tras validar su primer código TOTP frente al administrador
+     * que lo activó, dejándolo definitivamente habilitado.
+     *
+     * @param id            id del usuario
+     * @param adminId       id del administrador que realizó la activación
+     * @throws SQLException si falla la actualización
+     */
+    public void confirmarMfa(int id, int adminId) throws SQLException {
+        String sql = "UPDATE usuarios SET mfa_habilitado = TRUE, mfa_activado_por_id = ?, " +
+                "mfa_fecha_activacion = ? WHERE id = ?";
+        try (Connection con = DatabaseConfig.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, adminId);
+            ps.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()));
+            ps.setInt(3, id);
+            ps.executeUpdate();
+        }
+    }
+
+    /**
+     * Desactiva el MFA de un usuario y borra su secreto por completo — solo el administrador
+     * puede invocar esta operación (verificado en el servlet, no aquí).
+     *
+     * @param id id del usuario
+     * @throws SQLException si falla la actualización
+     */
+    public void desactivarMfa(int id) throws SQLException {
+        String sql = "UPDATE usuarios SET mfa_habilitado = FALSE, mfa_secret = NULL, " +
+                "mfa_activado_por_id = NULL, mfa_fecha_activacion = NULL WHERE id = ?";
+        try (Connection con = DatabaseConfig.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
+        }
     }
 }

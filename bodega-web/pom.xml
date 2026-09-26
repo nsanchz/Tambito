@@ -32,6 +32,7 @@
         <zxing.version>3.5.3</zxing.version>
         <jakarta-mail-api.version>2.1.3</jakarta-mail-api.version>
         <angus-mail.version>2.0.3</angus-mail.version>
+        <totp.version>1.7.1</totp.version>
     </properties>
 
     <dependencies>
@@ -120,6 +121,13 @@
             <groupId>org.eclipse.angus</groupId>
             <artifactId>angus-mail</artifactId>
             <version>${angus-mail.version}</version>
+        </dependency>
+
+        <!-- ===================== MFA / TOTP (Google Authenticator, RFC 6238) ===================== -->
+        <dependency>
+            <groupId>dev.samstevens.totp</groupId>
+            <artifactId>totp</artifactId>
+            <version>${totp.version}</version>
         </dependency>
 
         <!-- ===================== PRUEBAS UNITARIAS ===================== -->

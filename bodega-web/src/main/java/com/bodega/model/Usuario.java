@@ -20,6 +20,10 @@ public class Usuario {
     private LocalDateTime ultimoAcceso;
     private LocalDateTime fechaCreacion;
     private Integer creadoPorId;
+    private boolean mfaHabilitado;
+    private String mfaSecret;
+    private Integer mfaActivadoPorId;
+    private LocalDateTime mfaFechaActivacion;
 
     public Usuario() {
     }
@@ -151,5 +155,38 @@ public class Usuario {
     /** @return {@code true} si la cuenta está bloqueada temporalmente por intentos fallidos de login */
     public boolean isBloqueado() {
         return bloqueadoHasta != null && bloqueadoHasta.isAfter(LocalDateTime.now());
+    }
+
+    public boolean isMfaHabilitado() {
+        return mfaHabilitado;
+    }
+
+    public void setMfaHabilitado(boolean mfaHabilitado) {
+        this.mfaHabilitado = mfaHabilitado;
+    }
+
+    /** Secreto TOTP cifrado (AES-256-GCM vía CifradoUtil) tal como se guarda en BD; nunca en claro. */
+    public String getMfaSecret() {
+        return mfaSecret;
+    }
+
+    public void setMfaSecret(String mfaSecret) {
+        this.mfaSecret = mfaSecret;
+    }
+
+    public Integer getMfaActivadoPorId() {
+        return mfaActivadoPorId;
+    }
+
+    public void setMfaActivadoPorId(Integer mfaActivadoPorId) {
+        this.mfaActivadoPorId = mfaActivadoPorId;
+    }
+
+    public LocalDateTime getMfaFechaActivacion() {
+        return mfaFechaActivacion;
+    }
+
+    public void setMfaFechaActivacion(LocalDateTime mfaFechaActivacion) {
+        this.mfaFechaActivacion = mfaFechaActivacion;
     }
 }
