@@ -27,14 +27,16 @@
             100% { background-position: 0% 50%; }
         }
 
-        /* --- Casillas del código: nacen dispersas y rotadas, y se acomodan en fila --- */
+        /* --- Casillas del código: nacen dispersas y rotadas, y se acomodan en fila ---
+           Las 6 casillas viven SIEMPRE en su posición correcta de flexbox (justify-between);
+           el efecto de dispersión es solo un `transform` visual encima de esa posición, así
+           que el estado final ("acomodado" = transform identidad) queda perfectamente
+           alineado por construcción, sin calcular posiciones absolutas a mano. */
         #contenedor-casillas {
-            position: relative;
-            height: 64px;
+            display: flex;
+            justify-content: space-between;
         }
         .casilla-codigo {
-            position: absolute;
-            top: 0;
             width: 44px;
             height: 56px;
             background: rgba(255,255,255,0.06);
@@ -43,28 +45,22 @@
             border-radius: 12px;
             text-align: center;
             font-size: 1.25rem;
-            transition: transform 0.7s cubic-bezier(.2,.8,.2,1), left 0.7s cubic-bezier(.2,.8,.2,1),
-                        border-color 0.2s, box-shadow 0.2s;
+            transition: transform 0.7s cubic-bezier(.2,.8,.2,1), border-color 0.2s, box-shadow 0.2s;
         }
         .casilla-codigo:focus {
             outline: none;
             border-color: #C00000;
             box-shadow: 0 0 0 3px rgba(192,0,0,0.25);
         }
-        /* Posiciones/rotaciones dispersas iniciales (una por casilla, vía nth-child) */
-        #contenedor-casillas.disperso .casilla-codigo:nth-child(1) { left: 8%;  transform: translateY(6px)  rotate(-18deg); }
-        #contenedor-casillas.disperso .casilla-codigo:nth-child(2) { left: 42%; transform: translateY(-14px) rotate(9deg); }
-        #contenedor-casillas.disperso .casilla-codigo:nth-child(3) { left: 70%; transform: translateY(10px) rotate(-7deg); }
-        #contenedor-casillas.disperso .casilla-codigo:nth-child(4) { left: 20%; transform: translateY(-4px) rotate(14deg); }
-        #contenedor-casillas.disperso .casilla-codigo:nth-child(5) { left: 55%; transform: translateY(2px) rotate(-11deg); }
-        #contenedor-casillas.disperso .casilla-codigo:nth-child(6) { left: 84%; transform: translateY(-10px) rotate(6deg); }
-        /* Posiciones finales, en fila pareja */
-        #contenedor-casillas.acomodado .casilla-codigo:nth-child(1) { left: 0%;   transform: translateY(4px) rotate(0deg); }
-        #contenedor-casillas.acomodado .casilla-codigo:nth-child(2) { left: 20%;  transform: translateY(4px) rotate(0deg); }
-        #contenedor-casillas.acomodado .casilla-codigo:nth-child(3) { left: 40%;  transform: translateY(4px) rotate(0deg); }
-        #contenedor-casillas.acomodado .casilla-codigo:nth-child(4) { left: 60%;  transform: translateY(4px) rotate(0deg); }
-        #contenedor-casillas.acomodado .casilla-codigo:nth-child(5) { left: 80%;  transform: translateY(4px) rotate(0deg); }
-        #contenedor-casillas.acomodado .casilla-codigo:nth-child(6) { left: 100%; transform: translateY(4px) rotate(0deg) translateX(-100%); }
+        /* Desplazamiento/rotación dispersos iniciales (uno por casilla, vía nth-child) */
+        #contenedor-casillas.disperso .casilla-codigo:nth-child(1) { transform: translate(4px, 10px) rotate(-16deg); }
+        #contenedor-casillas.disperso .casilla-codigo:nth-child(2) { transform: translate(-6px, -14px) rotate(11deg); }
+        #contenedor-casillas.disperso .casilla-codigo:nth-child(3) { transform: translate(8px, 8px) rotate(-9deg); }
+        #contenedor-casillas.disperso .casilla-codigo:nth-child(4) { transform: translate(-8px, -6px) rotate(14deg); }
+        #contenedor-casillas.disperso .casilla-codigo:nth-child(5) { transform: translate(6px, 12px) rotate(-12deg); }
+        #contenedor-casillas.disperso .casilla-codigo:nth-child(6) { transform: translate(-4px, -10px) rotate(8deg); }
+        /* Acomodado = sin transform extra: quedan exactamente donde el flexbox las ubica. */
+        #contenedor-casillas.acomodado .casilla-codigo { transform: translate(0, 0) rotate(0deg); }
 
         .pantalla { transition: opacity 0.35s ease, transform 0.35s ease; }
         .pantalla-oculta { opacity: 0; position: absolute; inset: 0; pointer-events: none; transform: scale(0.98); }

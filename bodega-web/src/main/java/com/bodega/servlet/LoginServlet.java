@@ -1,8 +1,10 @@
 package com.bodega.servlet;
 
+import com.bodega.model.Rol;
 import com.bodega.service.AuditoriaService;
 import com.bodega.service.AutenticacionService;
 import com.bodega.service.AutenticacionService.RespuestaLogin;
+import com.bodega.service.AutenticacionService.ResultadoLogin;
 import com.bodega.service.ConfiguracionService;
 import com.bodega.util.Constantes;
 import com.bodega.util.LoginRateLimiter;
@@ -88,6 +90,21 @@ public class LoginServlet extends HttpServlet {
 
         try {
             RespuestaLogin respuesta = autenticacionService.autenticar(usuarioLogin, password);
+
+            // Un VENDEDOR no puede ingresar por la terminal de Administración: sus credenciales
+            // son válidas, pero esta terminal es exclusiva del rol ADMINISTRADOR. Se corta acá,
+            // antes de abrir cualquier sesión (incluso antes del paso de MFA si lo tuviera).
+            boolean credencialesValidas = respuesta.resultado == ResultadoLogin.EXITO
+                    || respuesta.resultado == ResultadoLogin.REQUIERE_MFA
+                    || respuesta.resultado == ResultadoLogin.REQUIERE_ENROLAMIENTO_MFA;
+            if (credencialesValidas && respuesta.usuario.getRol() == Rol.VENDEDOR
+                    && "ADMINISTRACION".equals(terminalId)) {
+                auditoriaService.registrar(respuesta.usuario.getId(), "LOGIN_TERMINAL_NO_PERMITIDA", "USUARIO",
+                        respuesta.usuario.getId(), "Vendedor intentó ingresar por la terminal de Administración", ip);
+                mostrarError(req, resp, usuarioLogin,
+                        "Acceso denegado: su cuenta es de Vendedor y debe ingresar seleccionando la terminal \"Tienda\".");
+                return;
+            }
 
             switch (respuesta.resultado) {
                 case EXITO -> {
