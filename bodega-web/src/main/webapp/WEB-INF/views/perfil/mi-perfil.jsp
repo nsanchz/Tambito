@@ -96,9 +96,25 @@
                             <label class="text-sm font-medium">Nueva contraseña *</label>
                             <div class="relative">
                                 <input type="password" id="password-nueva" name="passwordNueva" required minlength="8"
+                                       oninput="actualizarFortalezaPassword('password-nueva', 'fortaleza-nueva')"
                                        class="h-9 px-3 pr-16 border border-slate-300 rounded-lg text-sm w-full">
                                 <button type="button" onclick="alternarVisibilidadPassword('password-nueva', this)"
                                         class="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-500 hover:text-blue-600">Ver</button>
+                            </div>
+                            <div class="mt-1" id="fortaleza-nueva">
+                                <div class="flex items-center justify-between text-xs mb-1">
+                                    <span class="text-slate-500">Seguridad de la contraseña</span>
+                                    <span class="fortaleza-label font-medium text-slate-400">—</span>
+                                </div>
+                                <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="fortaleza-barra h-full bg-slate-300 transition-all" style="width:0%"></div>
+                                </div>
+                                <div class="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs">
+                                    <span data-req="len" class="flex items-center gap-1 text-slate-400">○ 8+ caracteres</span>
+                                    <span data-req="mayus" class="flex items-center gap-1 text-slate-400">○ A-Z</span>
+                                    <span data-req="minus" class="flex items-center gap-1 text-slate-400">○ a-z</span>
+                                    <span data-req="digito" class="flex items-center gap-1 text-slate-400">○ 123</span>
+                                </div>
                             </div>
                         </div>
                         <div class="flex flex-col gap-1">
@@ -121,6 +137,43 @@
                         var esOculta = campo.type === 'password';
                         campo.type = esOculta ? 'text' : 'password';
                         boton.textContent = esOculta ? 'Ocultar' : 'Ver';
+                    }
+
+                    // Refleja en vivo la misma política que valida el servidor
+                    // (PasswordUtil.cumplePoliticaMinima: 8+ caracteres, mayúscula, minúscula, dígito).
+                    function actualizarFortalezaPassword(idCampo, idIndicador) {
+                        var valor = document.getElementById(idCampo).value;
+                        var indicador = document.getElementById(idIndicador);
+
+                        var requisitos = {
+                            len: valor.length >= 8,
+                            mayus: /[A-Z]/.test(valor),
+                            minus: /[a-z]/.test(valor),
+                            digito: /[0-9]/.test(valor)
+                        };
+                        var cumplidos = Object.values(requisitos).filter(Boolean).length;
+
+                        indicador.querySelectorAll('[data-req]').forEach(function (span) {
+                            var ok = requisitos[span.dataset.req];
+                            span.classList.toggle('text-emerald-600', ok);
+                            span.classList.toggle('text-slate-400', !ok);
+                            span.textContent = (ok ? '✓ ' : '○ ') + span.textContent.slice(2);
+                        });
+
+                        var barra = indicador.querySelector('.fortaleza-barra');
+                        var label = indicador.querySelector('.fortaleza-label');
+                        var niveles = [
+                            {ancho: '0%', color: 'bg-slate-300', texto: '—', textoColor: 'text-slate-400'},
+                            {ancho: '25%', color: 'bg-red-500', texto: 'Débil', textoColor: 'text-red-600'},
+                            {ancho: '55%', color: 'bg-amber-500', texto: 'Regular', textoColor: 'text-amber-600'},
+                            {ancho: '80%', color: 'bg-lime-500', texto: 'Buena', textoColor: 'text-lime-600'},
+                            {ancho: '100%', color: 'bg-emerald-500', texto: 'Fuerte', textoColor: 'text-emerald-600'}
+                        ];
+                        var nivel = niveles[valor.length === 0 ? 0 : cumplidos];
+                        barra.style.width = nivel.ancho;
+                        barra.className = 'fortaleza-barra h-full transition-all ' + nivel.color;
+                        label.textContent = nivel.texto;
+                        label.className = 'fortaleza-label font-medium ' + nivel.textoColor;
                     }
                 </script>
             </c:otherwise>
