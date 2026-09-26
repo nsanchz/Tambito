@@ -56,11 +56,11 @@
                     <option value="DNI">DNI</option>
                     <option value="RUC">RUC</option>
                 </select>
-                <div class="flex gap-1">
+                <div class="flex gap-1 min-w-0">
                     <input type="text" name="clienteNumeroDocumento" id="pos-numero-documento" placeholder="N° de documento"
-                           inputmode="numeric" class="h-8 px-2 border border-slate-300 rounded-lg text-xs flex-1">
+                           inputmode="numeric" class="h-8 px-2 border border-slate-300 rounded-lg text-xs flex-1 min-w-0">
                     <button type="button" id="pos-btn-buscar" onclick="buscarDocumentoClientePos()"
-                            class="h-8 px-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-medium whitespace-nowrap">Buscar</button>
+                            class="h-8 px-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-medium whitespace-nowrap shrink-0">Buscar</button>
                 </div>
                 <span id="pos-mensaje-busqueda" class="text-xs text-slate-500"></span>
                 <input type="text" name="clienteNombre" id="pos-nombre" placeholder="Nombre / Razón social" class="h-8 px-2 border border-slate-300 rounded-lg text-xs">

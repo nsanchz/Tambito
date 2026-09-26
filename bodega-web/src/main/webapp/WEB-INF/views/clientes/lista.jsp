@@ -189,11 +189,11 @@
                 </div>
                 <div class="flex flex-col gap-1">
                     <label class="text-sm font-medium">N° de documento *</label>
-                    <div class="flex gap-2">
+                    <div class="flex gap-2 min-w-0">
                         <input type="text" name="numeroDocumento" id="nc-numero-documento" required
-                               inputmode="numeric" class="h-9 px-3 border border-slate-300 rounded-lg text-sm flex-1">
+                               inputmode="numeric" class="h-9 px-3 border border-slate-300 rounded-lg text-sm flex-1 min-w-0">
                         <button type="button" id="nc-btn-buscar" onclick="buscarDocumentoCliente()"
-                                class="h-9 px-3 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-medium whitespace-nowrap">
+                                class="h-9 px-3 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-medium whitespace-nowrap shrink-0">
                             Buscar
                         </button>
                     </div>

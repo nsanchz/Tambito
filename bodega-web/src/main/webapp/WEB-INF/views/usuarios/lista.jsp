@@ -107,7 +107,7 @@
                             </c:choose>
                         </td>
                         <td class="px-4 py-3 text-right">
-                            <div class="flex items-center justify-end gap-2">
+                            <div class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1.5 max-w-[260px] ml-auto">
                                 <button type="button" class="text-slate-500 hover:text-indigo-600" title="Editar nombre y correo"
                                         onclick="abrirModalEditarUsuario(this)"
                                         data-id="${u.id}" data-nombres="${fn:escapeXml(u.nombres)}"
