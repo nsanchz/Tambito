@@ -205,11 +205,11 @@
                 </div>
                 <div class="flex flex-col gap-1">
                     <label class="text-sm font-medium">Teléfono</label>
-                    <input type="tel" name="telefono" class="h-9 px-3 border border-slate-300 rounded-lg text-sm">
+                    <input type="tel" name="telefono" id="nc-telefono" class="h-9 px-3 border border-slate-300 rounded-lg text-sm">
                 </div>
                 <div class="flex flex-col gap-1">
                     <label class="text-sm font-medium">Correo *</label>
-                    <input type="email" name="correo" required class="h-9 px-3 border border-slate-300 rounded-lg text-sm">
+                    <input type="email" name="correo" id="nc-correo" required class="h-9 px-3 border border-slate-300 rounded-lg text-sm">
                     <span class="text-xs text-slate-400">Obligatorio: se usa para enviarle la boleta de cada compra.</span>
                 </div>
                 <div class="col-span-2 flex flex-col gap-1">
@@ -254,7 +254,15 @@
                     if (data.direccion) {
                         document.getElementById('nc-direccion').value = data.direccion;
                     }
-                    mensaje.textContent = 'Datos encontrados. Puede corregirlos si hace falta.';
+                    if (data.correo) {
+                        document.getElementById('nc-correo').value = data.correo;
+                    }
+                    if (data.telefono) {
+                        document.getElementById('nc-telefono').value = data.telefono;
+                    }
+                    mensaje.textContent = data.yaRegistrado
+                        ? 'Este documento ya es un cliente registrado; se autocompletaron sus datos.'
+                        : 'Datos encontrados. Puede corregirlos si hace falta.';
                     mensaje.className = 'text-xs text-emerald-600';
                 } else {
                     mensaje.textContent = data.mensaje || 'No se encontró información. Complete los datos manualmente.';

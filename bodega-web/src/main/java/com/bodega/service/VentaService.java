@@ -138,6 +138,13 @@ public class VentaService {
         if (items == null || items.isEmpty()) {
             return new ResultadoVenta(false, "El carrito de venta está vacío.", null);
         }
+        if (tipoComprobante == TipoComprobante.FACTURA && clienteId == null) {
+            // "Cliente varios" (sin documento identificado) solo puede recibir Boleta: una
+            // Factura requiere un cliente con RUC asociado. Nunca se confía en el <select>
+            // del navegador para esto, aunque ya venga deshabilitado ahí también.
+            return new ResultadoVenta(false,
+                    "No se puede emitir Factura para \"Cliente varios\". Seleccione un cliente registrado con RUC o cambie a Boleta.", null);
+        }
 
         MonedaPago monedaEfectiva = monedaPago != null ? monedaPago : MonedaPago.PEN;
         BigDecimal tipoCambioAplicado = null;

@@ -77,7 +77,7 @@
         <div class="grid grid-cols-2 gap-2">
             <select name="tipoComprobante" id="tipo-comprobante" class="h-9 px-2 border border-slate-300 rounded-lg text-sm">
                 <option value="BOLETA">Boleta</option>
-                <option value="FACTURA">Factura</option>
+                <option value="FACTURA" id="opcion-factura" disabled>Factura</option>
             </select>
             <input type="number" step="0.01" min="0" id="descuento" placeholder="Descuento S/" value="0"
                    class="h-9 px-2 border border-slate-300 rounded-lg text-sm" oninput="recalcularTotales()">
@@ -143,6 +143,15 @@
     function mostrarCamposCliente(mostrar) {
         document.getElementById('campos-cliente').classList.toggle('hidden', !mostrar);
         document.getElementById('campos-cliente').classList.toggle('flex', mostrar);
+
+        // "Cliente varios" (sin documento) solo puede recibir Boleta: la Factura requiere
+        // un cliente identificado con RUC. Se fuerza y se bloquea la opción en el <select>.
+        var comprobanteSelect = document.getElementById('tipo-comprobante');
+        var opcionFactura = document.getElementById('opcion-factura');
+        opcionFactura.disabled = !mostrar;
+        if (!mostrar) {
+            comprobanteSelect.value = 'BOLETA';
+        }
     }
 
     function agregarAlCarrito(id, nombre, precio, stockDisponible) {
@@ -369,7 +378,12 @@
             .then(function (data) {
                 if (data.encontrado) {
                     document.getElementById('pos-nombre').value = data.nombre || '';
-                    mensaje.textContent = 'Datos encontrados.';
+                    if (data.correo) {
+                        document.getElementById('pos-correo').value = data.correo;
+                    }
+                    mensaje.textContent = data.yaRegistrado
+                        ? 'Cliente ya registrado: se usarán sus datos.'
+                        : 'Datos encontrados.';
                     mensaje.className = 'text-xs text-emerald-600';
                 } else {
                     mensaje.textContent = data.mensaje || 'No se encontró información. Complete los datos manualmente.';
