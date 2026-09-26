@@ -21,6 +21,9 @@ public class Venta {
     private BigDecimal igv;
     private BigDecimal total;
     private MetodoPago metodoPago;
+    private MonedaPago monedaPago = MonedaPago.PEN;
+    private BigDecimal tipoCambioAplicado;
+    private BigDecimal montoPagadoUsd;
     private EstadoVenta estado;
     private String motivoAnulacion;
     private Integer usuarioAnulacionId;
@@ -133,6 +136,32 @@ public class Venta {
 
     public void setMetodoPago(MetodoPago metodoPago) {
         this.metodoPago = metodoPago;
+    }
+
+    public MonedaPago getMonedaPago() {
+        return monedaPago;
+    }
+
+    public void setMonedaPago(MonedaPago monedaPago) {
+        this.monedaPago = monedaPago;
+    }
+
+    /** Tipo de cambio (tasa "compra" SUNAT) aplicado al momento de la venta, o {@code null} si se pagó en soles. */
+    public BigDecimal getTipoCambioAplicado() {
+        return tipoCambioAplicado;
+    }
+
+    public void setTipoCambioAplicado(BigDecimal tipoCambioAplicado) {
+        this.tipoCambioAplicado = tipoCambioAplicado;
+    }
+
+    /** Monto en dólares que el cliente entregó físicamente, o {@code null} si se pagó en soles. */
+    public BigDecimal getMontoPagadoUsd() {
+        return montoPagadoUsd;
+    }
+
+    public void setMontoPagadoUsd(BigDecimal montoPagadoUsd) {
+        this.montoPagadoUsd = montoPagadoUsd;
     }
 
     public EstadoVenta getEstado() {

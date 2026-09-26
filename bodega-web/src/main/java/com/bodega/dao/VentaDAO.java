@@ -4,6 +4,7 @@ import com.bodega.config.DatabaseConfig;
 import com.bodega.model.DetalleVenta;
 import com.bodega.model.EstadoVenta;
 import com.bodega.model.MetodoPago;
+import com.bodega.model.MonedaPago;
 import com.bodega.model.TipoComprobante;
 import com.bodega.model.Venta;
 
@@ -36,8 +37,9 @@ public class VentaDAO {
      */
     public int crearCabecera(Connection con, Venta v) throws SQLException {
         String sql = "INSERT INTO ventas (tipo_comprobante, cliente_id, usuario_id, terminal_id, " +
-                "subtotal_imponible, descuento, igv, total, metodo_pago, estado, fecha_creacion) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                "subtotal_imponible, descuento, igv, total, metodo_pago, moneda_pago, " +
+                "tipo_cambio_aplicado, monto_pagado_usd, estado, fecha_creacion) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, v.getTipoComprobante().name());
             if (v.getClienteId() != null) {
@@ -52,8 +54,19 @@ public class VentaDAO {
             ps.setBigDecimal(7, v.getIgv());
             ps.setBigDecimal(8, v.getTotal());
             ps.setString(9, v.getMetodoPago().name());
-            ps.setString(10, v.getEstado().name());
-            ps.setTimestamp(11, Timestamp.valueOf(LocalDateTime.now()));
+            ps.setString(10, v.getMonedaPago().name());
+            if (v.getTipoCambioAplicado() != null) {
+                ps.setBigDecimal(11, v.getTipoCambioAplicado());
+            } else {
+                ps.setNull(11, java.sql.Types.DECIMAL);
+            }
+            if (v.getMontoPagadoUsd() != null) {
+                ps.setBigDecimal(12, v.getMontoPagadoUsd());
+            } else {
+                ps.setNull(12, java.sql.Types.DECIMAL);
+            }
+            ps.setString(13, v.getEstado().name());
+            ps.setTimestamp(14, Timestamp.valueOf(LocalDateTime.now()));
             ps.executeUpdate();
 
             try (ResultSet rs = ps.getGeneratedKeys()) {
@@ -304,6 +317,9 @@ public class VentaDAO {
         v.setIgv(rs.getBigDecimal("igv"));
         v.setTotal(rs.getBigDecimal("total"));
         v.setMetodoPago(MetodoPago.valueOf(rs.getString("metodo_pago")));
+        v.setMonedaPago(MonedaPago.valueOf(rs.getString("moneda_pago")));
+        v.setTipoCambioAplicado(rs.getBigDecimal("tipo_cambio_aplicado"));
+        v.setMontoPagadoUsd(rs.getBigDecimal("monto_pagado_usd"));
         v.setEstado(EstadoVenta.valueOf(rs.getString("estado")));
         v.setMotivoAnulacion(rs.getString("motivo_anulacion"));
 

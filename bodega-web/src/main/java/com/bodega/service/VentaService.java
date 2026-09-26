@@ -9,6 +9,7 @@ import com.bodega.dao.VentaDAO;
 import com.bodega.model.DetalleVenta;
 import com.bodega.model.EstadoVenta;
 import com.bodega.model.MetodoPago;
+import com.bodega.model.MonedaPago;
 import com.bodega.model.MovimientoInventario;
 import com.bodega.model.Producto;
 import com.bodega.model.TipoComprobante;
@@ -50,6 +51,7 @@ public class VentaService {
     private final LoteProductoService loteProductoService;
     private final ClienteDAO clienteDAO;
     private final ConfiguracionService configuracionService;
+    private final TipoCambioService tipoCambioService;
 
     public VentaService() {
         this.ventaDAO = new VentaDAO();
@@ -59,6 +61,7 @@ public class VentaService {
         this.loteProductoService = new LoteProductoService();
         this.clienteDAO = new ClienteDAO();
         this.configuracionService = new ConfiguracionService();
+        this.tipoCambioService = new TipoCambioService();
     }
 
     /** Línea del carrito del POS enviada por el cliente: producto y cantidad (nunca el precio). */
@@ -118,15 +121,33 @@ public class VentaService {
      * @param descuento      monto de descuento a aplicar sobre el subtotal (no puede exceder el subtotal)
      * @param terminalId     terminal/caja desde la que se registra la venta
      * @param usuarioId      id del cajero que registra la venta
+     * @param monedaPago     PEN (normal) o USD si el cliente pagó en efectivo en dólares; el total
+     *                       de la venta SIEMPRE se calcula y se guarda en soles independientemente
+     *                       de esto (ver comentario en {@code Venta.monedaPago})
+     * @param montoRecibidoUsd monto en dólares que el cliente entregó, requerido solo cuando
+     *                       {@code monedaPago == USD} (se usa únicamente para el ticket/conciliación,
+     *                       no para calcular el total)
      * @return resultado con el id de la venta si fue exitosa, o un mensaje de error de negocio
-     *         (carrito vacío, producto inexistente, stock insuficiente, descuento inválido) si no
+     *         (carrito vacío, producto inexistente, stock insuficiente, descuento inválido, o tipo
+     *         de cambio no disponible en este momento si se pidió pagar en USD) si no
      * @throws SQLException si falla alguna operación de base de datos (la transacción se revierte)
      */
     public ResultadoVenta registrarVenta(List<ItemCarrito> items, TipoComprobante tipoComprobante, Integer clienteId,
                                           MetodoPago metodoPago, BigDecimal descuento, String terminalId,
-                                          int usuarioId) throws SQLException {
+                                          int usuarioId, MonedaPago monedaPago, BigDecimal montoRecibidoUsd) throws SQLException {
         if (items == null || items.isEmpty()) {
             return new ResultadoVenta(false, "El carrito de venta está vacío.", null);
+        }
+
+        MonedaPago monedaEfectiva = monedaPago != null ? monedaPago : MonedaPago.PEN;
+        BigDecimal tipoCambioAplicado = null;
+        if (monedaEfectiva == MonedaPago.USD) {
+            Optional<TipoCambioService.TipoCambio> tipoCambioOpt = tipoCambioService.obtenerTipoCambioDeHoy();
+            if (tipoCambioOpt.isEmpty()) {
+                return new ResultadoVenta(false,
+                        "No se pudo obtener el tipo de cambio en este momento. Registre la venta en soles o intente nuevamente.", null);
+            }
+            tipoCambioAplicado = tipoCambioOpt.get().compra;
         }
 
         try (Connection con = DatabaseConfig.getConnection()) {
@@ -182,6 +203,9 @@ public class VentaService {
                 venta.setIgv(igv);
                 venta.setTotal(total.setScale(2, RoundingMode.HALF_UP));
                 venta.setMetodoPago(metodoPago);
+                venta.setMonedaPago(monedaEfectiva);
+                venta.setTipoCambioAplicado(tipoCambioAplicado);
+                venta.setMontoPagadoUsd(monedaEfectiva == MonedaPago.USD ? montoRecibidoUsd : null);
                 venta.setEstado(EstadoVenta.COMPLETADA);
 
                 int ventaId = ventaDAO.crearCabecera(con, venta);

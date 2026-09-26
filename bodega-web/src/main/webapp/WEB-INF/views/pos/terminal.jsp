@@ -99,6 +99,24 @@
             <button type="button" data-metodo="TRANSFERENCIA" onclick="seleccionarMetodoPago(this)" class="metodo-pago-btn h-9 rounded-lg text-xs bg-slate-100">Transf.</button>
         </div>
 
+        <!-- Pago en dólares en efectivo: solo aplica con EFECTIVO. -->
+        <div id="bloque-pago-usd" class="flex flex-col gap-2 bg-emerald-50 rounded-lg p-3">
+            <label class="flex items-center gap-2 text-xs font-medium text-emerald-800">
+                <input type="checkbox" id="check-pagar-usd" onchange="alternarPagoUsd()">
+                Cliente paga en efectivo en dólares (USD)
+            </label>
+            <div id="detalle-pago-usd" class="hidden flex-col gap-2">
+                <p id="texto-tipo-cambio" class="text-xs text-emerald-700">Consultando tipo de cambio…</p>
+                <div class="flex items-center justify-between text-sm font-semibold text-emerald-900">
+                    <span>Equivalente a cobrar</span>
+                    <span id="label-total-usd">$ 0.00</span>
+                </div>
+                <input type="number" step="0.01" min="0" id="monto-recibido-usd" placeholder="Monto recibido en USD"
+                       class="h-9 px-2 border border-emerald-300 rounded-lg text-sm" oninput="actualizarVueltoUsd()">
+                <p id="texto-vuelto-usd" class="text-xs text-emerald-700"></p>
+            </div>
+        </div>
+
         <!-- QR de referencia para pago con Yape/Plin (no es una pasarela real: es un código
              visual con el monto a transferir, para que el cliente confirme antes de pagar). -->
         <div id="contenedor-qr-yape" class="hidden flex-col items-center gap-2 bg-slate-50 rounded-lg p-3">
@@ -119,6 +137,8 @@
 <script>
     var carrito = [];
     var metodoPagoSeleccionado = 'EFECTIVO';
+    var tipoCambioDia = null; // {compra, venta} cargado una sola vez desde /api/tipo-cambio
+    var totalActualSoles = 0;
 
     function mostrarCamposCliente(mostrar) {
         document.getElementById('campos-cliente').classList.toggle('hidden', !mostrar);
@@ -186,8 +206,10 @@
         document.getElementById('label-descuento').textContent = 'S/ ' + descuento.toFixed(2);
         document.getElementById('label-igv').textContent = 'S/ ' + igv.toFixed(2);
         document.getElementById('label-total').textContent = 'S/ ' + total.toFixed(2);
+        totalActualSoles = total;
 
         actualizarQrYape(total);
+        actualizarEquivalenteUsd();
     }
 
     function actualizarQrYape(total) {
@@ -214,7 +236,70 @@
         btn.classList.remove('bg-slate-100');
         btn.classList.add('bg-blue-600', 'text-white');
         metodoPagoSeleccionado = btn.getAttribute('data-metodo');
+
+        var bloqueUsd = document.getElementById('bloque-pago-usd');
+        if (metodoPagoSeleccionado === 'EFECTIVO') {
+            bloqueUsd.classList.remove('hidden');
+            bloqueUsd.classList.add('flex');
+        } else {
+            bloqueUsd.classList.add('hidden');
+            bloqueUsd.classList.remove('flex');
+            document.getElementById('check-pagar-usd').checked = false;
+            alternarPagoUsd();
+        }
+
         recalcularTotales();
+    }
+
+    function alternarPagoUsd() {
+        var activo = document.getElementById('check-pagar-usd').checked;
+        var detalle = document.getElementById('detalle-pago-usd');
+        detalle.classList.toggle('hidden', !activo);
+        detalle.classList.toggle('flex', activo);
+
+        if (activo && !tipoCambioDia) {
+            fetch('${pageContext.request.contextPath}/api/tipo-cambio')
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var texto = document.getElementById('texto-tipo-cambio');
+                    if (data.disponible) {
+                        tipoCambioDia = data;
+                        texto.textContent = 'Tipo de cambio (compra): S/ ' + data.compra;
+                        actualizarEquivalenteUsd();
+                    } else {
+                        texto.textContent = 'Tipo de cambio no disponible en este momento. No se puede cobrar en USD.';
+                        document.getElementById('check-pagar-usd').checked = false;
+                        alternarPagoUsd();
+                    }
+                })
+                .catch(function () {
+                    document.getElementById('texto-tipo-cambio').textContent = 'No se pudo consultar el tipo de cambio.';
+                    document.getElementById('check-pagar-usd').checked = false;
+                    alternarPagoUsd();
+                });
+        }
+        if (activo) { actualizarEquivalenteUsd(); }
+    }
+
+    function actualizarEquivalenteUsd() {
+        if (!document.getElementById('check-pagar-usd').checked || !tipoCambioDia) return;
+        var equivalente = totalActualSoles / parseFloat(tipoCambioDia.compra);
+        document.getElementById('label-total-usd').textContent = '$ ' + equivalente.toFixed(2);
+        actualizarVueltoUsd();
+    }
+
+    function actualizarVueltoUsd() {
+        if (!tipoCambioDia) return;
+        var equivalente = totalActualSoles / parseFloat(tipoCambioDia.compra);
+        var recibido = parseFloat(document.getElementById('monto-recibido-usd').value) || 0;
+        var texto = document.getElementById('texto-vuelto-usd');
+        if (recibido <= 0) {
+            texto.textContent = '';
+        } else if (recibido < equivalente) {
+            texto.textContent = 'Falta: $ ' + (equivalente - recibido).toFixed(2);
+        } else {
+            texto.textContent = 'Vuelto: $ ' + (recibido - equivalente).toFixed(2);
+        }
     }
 
     function confirmarVenta() {
@@ -244,6 +329,12 @@
         agregarCampoOculto('tipoComprobante', document.getElementById('tipo-comprobante').value);
         agregarCampoOculto('metodoPago', metodoPagoSeleccionado);
         agregarCampoOculto('descuento', document.getElementById('descuento').value || '0');
+
+        var pagaEnUsd = metodoPagoSeleccionado === 'EFECTIVO' && document.getElementById('check-pagar-usd').checked;
+        if (pagaEnUsd) {
+            agregarCampoOculto('monedaPago', 'USD');
+            agregarCampoOculto('montoRecibidoUsd', document.getElementById('monto-recibido-usd').value || '0');
+        }
 
         var clienteTipo = document.querySelector('input[name="clienteTipo"]:checked').value;
         agregarCampoOculto('clienteTipo', clienteTipo);

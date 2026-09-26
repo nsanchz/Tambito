@@ -87,6 +87,10 @@ public class TicketVentaService {
             documento.add(new Paragraph("Cliente: " + venta.getClienteNombre(), FUENTE_NORMAL));
             documento.add(new Paragraph("Atendido por: " + venta.getUsuarioNombre(), FUENTE_NORMAL));
             documento.add(new Paragraph("Método de pago: " + venta.getMetodoPago(), FUENTE_NORMAL));
+            if (venta.getMonedaPago() == com.bodega.model.MonedaPago.USD) {
+                documento.add(new Paragraph("Pagado en USD (T.C. compra " + venta.getTipoCambioAplicado() + ")"
+                        + (venta.getMontoPagadoUsd() != null ? ": $ " + venta.getMontoPagadoUsd() : ""), FUENTE_NORMAL));
+            }
             documento.add(new Paragraph("--------------------------------", FUENTE_NORMAL));
 
             PdfPTable tabla = new PdfPTable(new float[]{3.5f, 1f, 1.5f});
@@ -107,6 +111,14 @@ public class TicketVentaService {
             Paragraph total = new Paragraph("TOTAL: " + moneda + " " + venta.getTotal(), FUENTE_TOTAL);
             total.setAlignment(Element.ALIGN_RIGHT);
             documento.add(total);
+
+            if (venta.getMonedaPago() == com.bodega.model.MonedaPago.USD && venta.getTipoCambioAplicado() != null) {
+                java.math.BigDecimal equivalenteUsd = venta.getTotal()
+                        .divide(venta.getTipoCambioAplicado(), 2, java.math.RoundingMode.HALF_UP);
+                Paragraph equivalente = new Paragraph("Equivalente: $ " + equivalenteUsd, FUENTE_NORMAL);
+                equivalente.setAlignment(Element.ALIGN_RIGHT);
+                documento.add(equivalente);
+            }
 
             documento.add(new Paragraph(" "));
             if (venta.getEstado() == com.bodega.model.EstadoVenta.ANULADA) {

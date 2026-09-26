@@ -4,6 +4,7 @@ import com.bodega.model.Categoria;
 import com.bodega.model.Cliente;
 import com.bodega.model.EstadoCuenta;
 import com.bodega.model.MetodoPago;
+import com.bodega.model.MonedaPago;
 import com.bodega.model.Producto;
 import com.bodega.model.TipoComprobante;
 import com.bodega.model.TipoDocumentoCliente;
@@ -128,8 +129,16 @@ public class PosServlet extends HttpServlet {
             BigDecimal descuento = (descuentoParam != null && !descuentoParam.isBlank())
                     ? new BigDecimal(descuentoParam) : BigDecimal.ZERO;
 
-            ResultadoVenta resultado = ventaService.registrarVenta(
-                    items, tipoComprobante, clienteId, metodoPago, descuento, terminalId, usuarioIdSesion);
+            // Pago en dólares: solo tiene sentido con EFECTIVO; el checkbox del POS solo se
+            // habilita en ese caso, pero se vuelve a validar aquí (nunca confiar en el cliente).
+            boolean pagarEnUsd = "USD".equals(req.getParameter("monedaPago")) && metodoPago == MetodoPago.EFECTIVO;
+            MonedaPago monedaPago = pagarEnUsd ? MonedaPago.USD : MonedaPago.PEN;
+            String montoUsdParam = req.getParameter("montoRecibidoUsd");
+            BigDecimal montoRecibidoUsd = (pagarEnUsd && montoUsdParam != null && !montoUsdParam.isBlank())
+                    ? new BigDecimal(montoUsdParam) : null;
+
+            ResultadoVenta resultado = ventaService.registrarVenta(items, tipoComprobante, clienteId, metodoPago,
+                    descuento, terminalId, usuarioIdSesion, monedaPago, montoRecibidoUsd);
 
             if (resultado.exitoso) {
                 enviarComprobantePorCorreoEnSegundoPlano(resultado.ventaId, clienteId);

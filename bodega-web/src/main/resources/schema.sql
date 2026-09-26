@@ -256,6 +256,15 @@ CREATE TABLE cache_consulta_documento (
     fecha_consulta       DATETIME     NOT NULL
 ) ENGINE = InnoDB;
 
+-- Caché del tipo de cambio USD del día (apisperu.com, fuente SUNAT), para no consultar la API
+-- en cada venta pagada en dólares — se refresca automáticamente al cambiar la fecha.
+CREATE TABLE cache_tipo_cambio (
+    fecha           DATE PRIMARY KEY,
+    compra          DECIMAL(10,4) NOT NULL,
+    venta           DECIMAL(10,4) NOT NULL,
+    fecha_consulta  DATETIME      NOT NULL
+) ENGINE = InnoDB;
+
 -- =====================================================================
 -- MÓDULO: Punto de Venta (POS) / Historial de Ventas y Comprobantes
 -- El registro y la anulación de una venta son transacciones ACID controladas
@@ -274,6 +283,13 @@ CREATE TABLE ventas (
     igv                   DECIMAL(10,2) NOT NULL,
     total                 DECIMAL(10,2) NOT NULL,
     metodo_pago           ENUM('EFECTIVO', 'TARJETA', 'YAPE_PLIN', 'TRANSFERENCIA') NOT NULL,
+    -- Pago en dólares (solo tiene sentido con metodo_pago = EFECTIVO): el total/subtotal/igv
+    -- de arriba SIEMPRE quedan en soles (fuente de verdad contable); estas 3 columnas solo
+    -- registran en qué moneda pagó físicamente el cliente, para el ticket y la conciliación
+    -- de caja, nunca para recalcular el total de la venta.
+    moneda_pago           ENUM('PEN', 'USD') NOT NULL DEFAULT 'PEN',
+    tipo_cambio_aplicado  DECIMAL(10,4) NULL,
+    monto_pagado_usd      DECIMAL(10,2) NULL,
     estado                ENUM('COMPLETADA', 'ANULADA') NOT NULL DEFAULT 'COMPLETADA',
     motivo_anulacion      VARCHAR(300)  NULL,
     usuario_anulacion_id  INT           NULL,
