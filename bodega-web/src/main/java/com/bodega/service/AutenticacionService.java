@@ -27,6 +27,7 @@ public class AutenticacionService {
     public enum ResultadoLogin {
         EXITO,
         REQUIERE_MFA,
+        REQUIERE_ENROLAMIENTO_MFA,
         CREDENCIALES_INVALIDAS,
         CUENTA_INACTIVA,
         CUENTA_BLOQUEADA
@@ -93,9 +94,14 @@ public class AutenticacionService {
         usuarioDAO.registrarAccesoExitoso(usuario.getId());
 
         // Contraseña correcta: si el usuario tiene MFA activo, el login queda pendiente del
-        // segundo factor (ver LoginServlet/LoginMfaServlet) antes de abrir la sesión real.
+        // segundo factor; si un administrador inició la activación pero todavía no se confirmó
+        // (mfa_secret ya generado, mfa_habilitado aún en FALSE), este es justamente el momento
+        // en que el propio usuario debe escanear el QR y confirmarlo (ver LoginServlet/LoginMfaServlet).
         if (usuario.isMfaHabilitado()) {
             return new RespuestaLogin(ResultadoLogin.REQUIERE_MFA, usuario);
+        }
+        if (usuario.getMfaSecret() != null) {
+            return new RespuestaLogin(ResultadoLogin.REQUIERE_ENROLAMIENTO_MFA, usuario);
         }
         return new RespuestaLogin(ResultadoLogin.EXITO, usuario);
     }

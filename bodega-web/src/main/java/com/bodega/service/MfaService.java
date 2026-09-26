@@ -4,6 +4,7 @@ import com.bodega.dao.UsuarioDAO;
 import com.bodega.model.Usuario;
 import com.bodega.service.UsuarioService.ResultadoOperacion;
 import com.bodega.util.CifradoUtil;
+import com.bodega.util.SesionActivaRegistry;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
@@ -65,14 +66,19 @@ public class MfaService {
     }
 
     /**
-     * Inicia la activación de MFA para un usuario: genera un secreto TOTP nuevo y lo guarda
-     * cifrado en estado pendiente (no habilitado todavía). Si el usuario ya tenía MFA activo,
-     * se rechaza — primero hay que desactivarlo explícitamente para generar uno nuevo.
+     * Inicia la activación de MFA para un usuario: genera un secreto TOTP nuevo, lo guarda
+     * cifrado en estado pendiente (no habilitado todavía) y fuerza el cierre de la sesión
+     * activa de ese usuario si la tiene abierta en este momento. El propio usuario verá el
+     * QR y lo confirmará recién cuando vuelva a iniciar sesión (ver {@code AutenticacionService}
+     * / {@code LoginMfaServlet}) — el administrador nunca ve el código QR de otra persona.
+     * Si el usuario ya tenía MFA activo, se rechaza — primero hay que desactivarlo
+     * explícitamente para generar uno nuevo.
      *
      * @param usuarioId id del usuario al que se le activa el MFA
+     * @param adminId   id del administrador que ejecuta la activación
      * @throws SQLException si falla la base de datos
      */
-    public ResultadoOperacion iniciarActivacion(int usuarioId) throws SQLException {
+    public ResultadoOperacion iniciarActivacion(int usuarioId, int adminId) throws SQLException {
         Optional<Usuario> usuarioOpt = usuarioDAO.buscarPorId(usuarioId);
         if (usuarioOpt.isEmpty()) {
             return new ResultadoOperacion(false, "Usuario no encontrado.");
@@ -82,9 +88,11 @@ public class MfaService {
                     "Este usuario ya tiene el MFA activado. Desactívelo primero si desea generar un nuevo código QR.");
         }
         String secreto = secretGenerator.generate();
-        usuarioDAO.guardarSecretoMfaPendiente(usuarioId, CifradoUtil.cifrar(secreto));
+        usuarioDAO.guardarSecretoMfaPendiente(usuarioId, CifradoUtil.cifrar(secreto), adminId);
+        SesionActivaRegistry.invalidarSiExiste(usuarioId);
         return new ResultadoOperacion(true,
-                "Código QR generado. Pídale al usuario escanearlo con Google Authenticator y confirme con el código de 6 dígitos.");
+                "MFA activado. La próxima vez que este usuario inicie sesión, deberá escanear el código QR "
+                        + "y confirmarlo con Google Authenticator antes de poder continuar.");
     }
 
     /**
@@ -113,16 +121,16 @@ public class MfaService {
     }
 
     /**
-     * Confirma la activación validando el primer código de 6 dígitos ingresado delante del
-     * administrador. Si el código no calza, el secreto pendiente se conserva (no se invalida
-     * por un simple error de tipeo) para poder reintentar sin volver a escanear el QR.
+     * Confirma la activación validando el primer código de 6 dígitos, ingresado por el propio
+     * usuario en su siguiente login (ver {@code LoginMfaServlet}). Si el código no calza, el
+     * secreto pendiente se conserva (no se invalida por un simple error de tipeo) para poder
+     * reintentar sin volver a escanear el QR.
      *
      * @param usuarioId id del usuario
      * @param codigo    código de 6 dígitos mostrado en Google Authenticator
-     * @param adminId   id del administrador que realiza la confirmación (queda en auditoría)
      * @throws SQLException si falla la base de datos
      */
-    public ResultadoOperacion confirmarActivacion(int usuarioId, String codigo, int adminId) throws SQLException {
+    public ResultadoOperacion confirmarActivacion(int usuarioId, String codigo) throws SQLException {
         Optional<Usuario> usuarioOpt = usuarioDAO.buscarPorId(usuarioId);
         if (usuarioOpt.isEmpty() || usuarioOpt.get().getMfaSecret() == null) {
             return new ResultadoOperacion(false, "No hay una activación de MFA pendiente para este usuario.");
@@ -134,8 +142,8 @@ public class MfaService {
             return new ResultadoOperacion(false,
                     "El código ingresado no es válido. Verifique la hora del celular e intente nuevamente.");
         }
-        usuarioDAO.confirmarMfa(usuarioId, adminId);
-        return new ResultadoOperacion(true, "MFA activado correctamente para este usuario.");
+        usuarioDAO.confirmarMfa(usuarioId);
+        return new ResultadoOperacion(true, "MFA activado correctamente.");
     }
 
     /**

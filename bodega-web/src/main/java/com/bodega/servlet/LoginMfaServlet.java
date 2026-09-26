@@ -3,6 +3,7 @@ package com.bodega.servlet;
 import com.bodega.model.Usuario;
 import com.bodega.service.AuditoriaService;
 import com.bodega.service.MfaService;
+import com.bodega.service.MfaService.DatosActivacionPendiente;
 import com.bodega.service.UsuarioService;
 import com.bodega.util.Constantes;
 import com.bodega.util.LoginRateLimiter;
@@ -43,6 +44,24 @@ public class LoginMfaServlet extends HttpServlet {
             resp.sendRedirect(req.getContextPath() + "/login");
             return;
         }
+
+        if (esEnrolamiento(req)) {
+            try {
+                Optional<DatosActivacionPendiente> datos = mfaService.obtenerActivacionPendiente(usuarioId);
+                if (datos.isEmpty()) {
+                    // El administrador desactivó/canceló la activación mientras tanto, o ya se
+                    // confirmó desde otra pestaña: no hay nada pendiente que enrolar.
+                    req.getSession().invalidate();
+                    resp.sendRedirect(req.getContextPath() + "/login");
+                    return;
+                }
+                req.setAttribute("mfaQrDataUri", datos.get().qrDataUri);
+                req.setAttribute("mfaOtpAuthUri", datos.get().otpAuthUriManual);
+            } catch (SQLException e) {
+                throw new ServletException("Error al preparar el enrolamiento de MFA.", e);
+            }
+        }
+
         req.getRequestDispatcher("/WEB-INF/views/auth/login-mfa.jsp").forward(req, resp);
     }
 
@@ -65,17 +84,32 @@ public class LoginMfaServlet extends HttpServlet {
 
         HttpSession session = req.getSession(true);
         String codigo = req.getParameter("codigo");
+        boolean enrolando = esEnrolamiento(req);
 
         try {
             Optional<Usuario> usuarioOpt = usuarioService.buscarPorId(usuarioId);
-            if (usuarioOpt.isEmpty() || !usuarioOpt.get().isMfaHabilitado()) {
+            if (usuarioOpt.isEmpty() || (enrolando ? usuarioOpt.get().getMfaSecret() == null : !usuarioOpt.get().isMfaHabilitado())) {
                 session.invalidate();
                 resp.sendRedirect(req.getContextPath() + "/login");
                 return;
             }
             Usuario usuario = usuarioOpt.get();
 
-            if (mfaService.verificarCodigoLogin(usuario, codigo)) {
+            boolean codigoValido;
+            if (enrolando) {
+                // Confirma la activación: mismo secreto pendiente que generó el administrador,
+                // pero validado y confirmado por el propio usuario en este momento.
+                var resultado = mfaService.confirmarActivacion(usuarioId, codigo);
+                codigoValido = resultado.exitoso;
+            } else {
+                codigoValido = mfaService.verificarCodigoLogin(usuario, codigo);
+            }
+
+            if (codigoValido) {
+                if (enrolando) {
+                    auditoriaService.registrar(usuario.getId(), "MFA_CONFIRMAR", "USUARIO",
+                            usuario.getId(), "El usuario confirmó su propia activación de MFA en el login", ip);
+                }
                 String terminalId = (String) session.getAttribute(Constantes.SESSION_TERMINAL_ID);
                 String nombreEmpresa = obtenerNombreEmpresa(req);
                 LoginSessionHelper.abrirSesionCompleta(req, usuario, terminalId, nombreEmpresa, ip);
@@ -95,10 +129,22 @@ public class LoginMfaServlet extends HttpServlet {
                 return;
             }
 
+            if (enrolando) {
+                // Reintento: el secreto pendiente se conserva, se vuelve a mostrar el mismo QR.
+                req.setAttribute(Constantes.ATTR_ERROR, "Código incorrecto. Verifique la hora de su celular e intente nuevamente.");
+                doGet(req, resp);
+                return;
+            }
             mostrarError(req, resp, "Código incorrecto. Verifique la hora de su celular e intente nuevamente.");
         } catch (SQLException e) {
             throw new ServletException("Error al verificar el código MFA.", e);
         }
+    }
+
+    /** @return {@code true} si esta sesión pendiente corresponde a un enrolamiento (QR aún sin confirmar). */
+    private boolean esEnrolamiento(HttpServletRequest req) {
+        HttpSession session = req.getSession(false);
+        return session != null && Boolean.TRUE.equals(session.getAttribute(Constantes.SESSION_MFA_ENROLANDO));
     }
 
     /**

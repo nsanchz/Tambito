@@ -40,12 +40,31 @@
 </head>
 <body class="bg-black min-h-screen flex">
 
-<div class="w-full lg:w-[42%] min-h-screen flex flex-col justify-center px-8 sm:px-16 py-12 bg-gradient-to-br from-slate-900 to-black relative">
+<div class="w-full lg:w-[42%] min-h-screen flex flex-col justify-center px-8 sm:px-16 py-12 bg-gradient-to-br from-slate-900 to-black relative overflow-y-auto">
     <div class="max-w-sm w-full mx-auto">
-        <h1 class="titulo-cursiva text-4xl text-white mb-3">Verificación</h1>
-        <p class="text-sm text-slate-400 mb-8">
-            Abra Google Authenticator e ingrese el código de 6 dígitos generado para su cuenta.
-        </p>
+        <c:choose>
+            <c:when test="${not empty mfaQrDataUri}">
+                <h1 class="titulo-cursiva text-4xl text-white mb-3">Activar verificación</h1>
+                <p class="text-sm text-slate-400 mb-6">
+                    Un administrador activó la verificación en dos pasos para su cuenta. Abra
+                    <strong class="text-slate-300">Google Authenticator</strong>, escanee este código y
+                    luego ingrese los 6 dígitos generados para confirmar.
+                </p>
+                <div class="flex justify-center mb-6">
+                    <img src="${mfaQrDataUri}" alt="Código QR de activación de MFA" class="rounded-lg" width="200" height="200">
+                </div>
+                <details class="text-xs text-slate-500 mb-6">
+                    <summary class="cursor-pointer">¿No puede escanear? Ingreso manual</summary>
+                    <code class="block mt-1 p-2 bg-white/5 rounded break-all text-slate-400"><c:out value="${mfaOtpAuthUri}"/></code>
+                </details>
+            </c:when>
+            <c:otherwise>
+                <h1 class="titulo-cursiva text-4xl text-white mb-3">Verificación</h1>
+                <p class="text-sm text-slate-400 mb-8">
+                    Abra Google Authenticator e ingrese el código de 6 dígitos generado para su cuenta.
+                </p>
+            </c:otherwise>
+        </c:choose>
 
         <c:if test="${not empty error}">
             <div class="bg-red-500/10 border border-red-500/30 text-red-300 rounded-lg p-3 mb-5 text-sm">
@@ -66,7 +85,7 @@
             <button type="submit"
                     class="h-12 bg-white hover:bg-slate-200 text-slate-900 rounded-full font-medium text-sm
                            flex items-center justify-center gap-2 transition-colors">
-                Verificar
+                <c:out value="${not empty mfaQrDataUri ? 'Confirmar y activar' : 'Verificar'}"/>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
                 </svg>

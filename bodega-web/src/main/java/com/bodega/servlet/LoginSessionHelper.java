@@ -4,6 +4,7 @@ import com.bodega.model.Usuario;
 import com.bodega.service.AuditoriaService;
 import com.bodega.service.ConfiguracionService;
 import com.bodega.util.Constantes;
+import com.bodega.util.SesionActivaRegistry;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -36,11 +37,13 @@ final class LoginSessionHelper {
         HttpSession session = req.getSession(true);
         session.removeAttribute(Constantes.SESSION_MFA_PENDIENTE_USUARIO_ID);
         session.removeAttribute(Constantes.SESSION_MFA_PENDIENTE_EXPIRA);
+        session.removeAttribute(Constantes.SESSION_MFA_ENROLANDO);
         session.setAttribute(Constantes.SESSION_USUARIO_ID, usuario.getId());
         session.setAttribute(Constantes.SESSION_USUARIO_NOMBRE, usuario.getNombreCompleto());
         session.setAttribute(Constantes.SESSION_USUARIO_ROL, usuario.getRol().name());
         session.setAttribute(Constantes.SESSION_TERMINAL_ID, terminalId);
         session.setAttribute(Constantes.SESSION_NOMBRE_EMPRESA, nombreEmpresa);
+        SesionActivaRegistry.registrar(usuario.getId(), session);
 
         // Timeout de sesión diferenciado por rol (ver Configuración del Sistema): el valor
         // fijo de web.xml es solo el máximo por defecto; aquí se ajusta por sesión según el

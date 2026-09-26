@@ -21,6 +21,11 @@ public final class Constantes {
     public static final String SESSION_MFA_PENDIENTE_EXPIRA = "mfaPendienteExpira";
     public static final int MFA_PENDIENTE_MINUTOS = 2;
 
+    // Distingue, dentro de la sesión pendiente de /login-mfa, si el usuario debe solo ingresar
+    // su código habitual (MFA ya confirmado) o si además debe escanear el QR y confirmarlo por
+    // primera vez (activación recién iniciada por un administrador, ver MfaService).
+    public static final String SESSION_MFA_ENROLANDO = "mfaEnrolando";
+
     // Atributos de request para mensajes hacia las vistas JSP
     public static final String ATTR_ERROR = "error";
     public static final String ATTR_MENSAJE = "mensaje";

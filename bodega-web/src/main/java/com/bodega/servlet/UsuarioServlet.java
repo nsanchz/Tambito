@@ -5,7 +5,6 @@ import com.bodega.model.Rol;
 import com.bodega.model.Usuario;
 import com.bodega.service.AuditoriaService;
 import com.bodega.service.MfaService;
-import com.bodega.service.MfaService.DatosActivacionPendiente;
 import com.bodega.service.UsuarioService;
 import com.bodega.service.UsuarioService.ResultadoOperacion;
 import com.bodega.util.Constantes;
@@ -18,7 +17,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Gestiona el módulo "Gestión de Usuarios y Roles de Seguridad". Todo este Servlet está
@@ -56,20 +54,6 @@ public class UsuarioServlet extends HttpServlet {
             req.setAttribute("usuarios", usuarios);
             req.setAttribute("tituloPagina", "Gestión de Usuarios y Roles de Seguridad");
             req.setAttribute("moduloActivo", "usuarios");
-
-            // Si se acaba de iniciar (o se está reintentando) una activación de MFA, se
-            // muestra el QR pendiente para que el administrador lo exhiba al usuario ahí mismo.
-            String mfaSetupParam = req.getParameter("mfaSetup");
-            if (mfaSetupParam != null) {
-                int usuarioIdSetup = Integer.parseInt(mfaSetupParam);
-                Optional<DatosActivacionPendiente> datos = mfaService.obtenerActivacionPendiente(usuarioIdSetup);
-                if (datos.isPresent()) {
-                    req.setAttribute("mfaSetupUsuarioId", usuarioIdSetup);
-                    req.setAttribute("mfaSetupQrDataUri", datos.get().qrDataUri);
-                    req.setAttribute("mfaSetupOtpAuthUri", datos.get().otpAuthUriManual);
-                }
-            }
-
             req.getRequestDispatcher("/WEB-INF/views/usuarios/lista.jsp").forward(req, resp);
         } catch (SQLException e) {
             throw new ServletException("Error al listar usuarios.", e);
@@ -104,14 +88,6 @@ public class UsuarioServlet extends HttpServlet {
             return;
         }
 
-        // Activar/confirmar MFA redirigen de vuelta con ?mfaSetup=<id> para reabrir el modal
-        // con el QR (activar) o para reintentar tras un código incorrecto (confirmar), en vez
-        // de perder el contexto con un redirect genérico a /usuarios.
-        if ("activarMfa".equals(accion) || "confirmarMfa".equals(accion)) {
-            procesarAccionMfaConQr(req, resp, accion, idAdminSesion, ip);
-            return;
-        }
-
         try {
             Integer usuarioIdParam = req.getParameter("usuarioId") != null
                     ? Integer.parseInt(req.getParameter("usuarioId")) : null;
@@ -120,6 +96,7 @@ public class UsuarioServlet extends HttpServlet {
                 case "cambiarRol" -> usuarioService.cambiarRol(usuarioIdParam, Rol.valueOf(req.getParameter("nuevoRol")), idAdminSesion);
                 case "cambiarEstado" -> usuarioService.cambiarEstado(usuarioIdParam, EstadoCuenta.valueOf(req.getParameter("nuevoEstado")), idAdminSesion);
                 case "desbloquear" -> usuarioService.desbloquear(usuarioIdParam);
+                case "activarMfa" -> mfaService.iniciarActivacion(usuarioIdParam, idAdminSesion);
                 case "desactivarMfa" -> mfaService.desactivar(usuarioIdParam);
                 case "editar" -> usuarioService.editarDatos(usuarioIdParam, req.getParameter("nombres"),
                         req.getParameter("apellidos"), req.getParameter("correo"), req.getParameter("telefono"));
@@ -143,41 +120,6 @@ public class UsuarioServlet extends HttpServlet {
         }
 
         resp.sendRedirect(req.getContextPath() + "/usuarios");
-    }
-
-    /**
-     * Procesa {@code activarMfa} (genera el secreto/QR pendiente) y {@code confirmarMfa}
-     * (valida el primer código de 6 dígitos), redirigiendo siempre a
-     * {@code /usuarios?mfaSetup=<id>} para que la lista reabra el modal con el QR — tanto si
-     * la activación recién empieza como si un código incorrecto requiere reintentar sin
-     * perder el secreto ya generado.
-     */
-    private void procesarAccionMfaConQr(HttpServletRequest req, HttpServletResponse resp, String accion,
-                                         int idAdminSesion, String ip) throws ServletException, IOException {
-        try {
-            int usuarioIdParam = Integer.parseInt(req.getParameter("usuarioId"));
-
-            ResultadoOperacion resultado = "activarMfa".equals(accion)
-                    ? mfaService.iniciarActivacion(usuarioIdParam)
-                    : mfaService.confirmarActivacion(usuarioIdParam, req.getParameter("codigo"), idAdminSesion);
-
-            if (resultado.exitoso) {
-                auditoriaService.registrar(idAdminSesion,
-                        "activarMfa".equals(accion) ? "MFA_ACTIVAR" : "MFA_CONFIRMAR",
-                        "USUARIO", usuarioIdParam, resultado.mensaje, ip);
-            }
-            req.getSession().setAttribute(resultado.exitoso ? Constantes.ATTR_MENSAJE : Constantes.ATTR_ERROR,
-                    resultado.mensaje);
-
-            // Tras confirmar con éxito, ya no hay nada pendiente que mostrar: se vuelve a la
-            // lista simple. Si falló (código incorrecto) o recién se activó, se reabre el modal.
-            String destino = resultado.exitoso && "confirmarMfa".equals(accion)
-                    ? req.getContextPath() + "/usuarios"
-                    : req.getContextPath() + "/usuarios?mfaSetup=" + usuarioIdParam;
-            resp.sendRedirect(destino);
-        } catch (SQLException e) {
-            throw new ServletException("Error al procesar la operación de MFA.", e);
-        }
     }
 
     private void procesarCreacionYResponder(HttpServletRequest req, HttpServletResponse resp, int idAdminSesion, String ip)

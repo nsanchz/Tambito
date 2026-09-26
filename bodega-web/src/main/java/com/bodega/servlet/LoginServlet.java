@@ -94,16 +94,20 @@ public class LoginServlet extends HttpServlet {
                     LoginSessionHelper.abrirSesionCompleta(req, respuesta.usuario, terminalId, obtenerNombreEmpresa(), ip);
                     LoginSessionHelper.redirigirTrasLogin(req, resp, respuesta.usuario);
                 }
-                case REQUIERE_MFA -> {
+                case REQUIERE_MFA, REQUIERE_ENROLAMIENTO_MFA -> {
                     // Contraseña correcta, pero falta el segundo factor: se abre una sesión
                     // "pendiente" de corta duración, SIN atributos de sesión real, para que
                     // AuthenticationFilter siga bloqueando cualquier ruta protegida hasta que
-                    // se complete /login-mfa.
+                    // se complete /login-mfa. Si un administrador activó el MFA pero todavía no
+                    // se confirmó (REQUIERE_ENROLAMIENTO_MFA), este es el momento en que el
+                    // propio usuario ve el QR y lo confirma, en vez de haberlo visto el admin.
                     HttpSession session = req.getSession(true);
                     session.setAttribute(Constantes.SESSION_MFA_PENDIENTE_USUARIO_ID, respuesta.usuario.getId());
                     session.setAttribute(Constantes.SESSION_MFA_PENDIENTE_EXPIRA,
                             LocalDateTime.now().plusMinutes(Constantes.MFA_PENDIENTE_MINUTOS));
                     session.setAttribute(Constantes.SESSION_TERMINAL_ID, terminalId);
+                    session.setAttribute(Constantes.SESSION_MFA_ENROLANDO,
+                            respuesta.resultado == AutenticacionService.ResultadoLogin.REQUIERE_ENROLAMIENTO_MFA);
                     resp.sendRedirect(req.getContextPath() + "/login-mfa");
                 }
                 case CREDENCIALES_INVALIDAS -> {

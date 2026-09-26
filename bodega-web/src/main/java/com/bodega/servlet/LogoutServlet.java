@@ -1,5 +1,7 @@
 package com.bodega.servlet;
 
+import com.bodega.util.Constantes;
+import com.bodega.util.SesionActivaRegistry;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -25,6 +27,10 @@ public class LogoutServlet extends HttpServlet {
 
         HttpSession session = req.getSession(false);
         if (session != null) {
+            Object usuarioId = session.getAttribute(Constantes.SESSION_USUARIO_ID);
+            if (usuarioId instanceof Integer) {
+                SesionActivaRegistry.eliminar((Integer) usuarioId);
+            }
             session.invalidate();
         }
         resp.sendRedirect(req.getContextPath() + "/login");
