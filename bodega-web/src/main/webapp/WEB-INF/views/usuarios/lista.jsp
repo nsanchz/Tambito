@@ -303,6 +303,16 @@
                     <input type="radio" name="rolSeleccionado" value="VENDEDOR" ${param.rolSeleccionado != 'ADMINISTRADOR' ? 'checked' : ''}> Vendedor (mostrador y caja)
                 </label>
             </div>
+            <label class="flex items-start gap-3 p-3 border border-emerald-200 bg-emerald-50 rounded-lg cursor-pointer">
+                <input type="checkbox" name="activarMfaAlCrear" value="true" class="mt-0.5">
+                <span class="flex flex-col">
+                    <span class="text-sm font-medium text-emerald-800">Activar verificación en dos pasos (MFA) para este usuario</span>
+                    <span class="text-xs text-emerald-700">
+                        El usuario deberá escanear un código QR con Google Authenticator y confirmarlo en su primer
+                        inicio de sesión — usted, como administrador, no verá ese código.
+                    </span>
+                </span>
+            </label>
             <div class="flex items-center justify-end gap-3 pt-2">
                 <button type="button" onclick="document.getElementById('modal-nuevo-usuario').classList.add('hidden')"
                         class="h-9 px-4 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm">Cancelar</button>

@@ -128,8 +128,24 @@ public class UsuarioServlet extends HttpServlet {
             ResultadoOperacion resultado = procesarCreacion(req, idAdminSesion);
 
             if (resultado.exitoso) {
-                auditoriaService.registrar(idAdminSesion, "USUARIO_CREAR", "USUARIO", null, resultado.mensaje, ip);
-                req.getSession().setAttribute(Constantes.ATTR_MENSAJE, resultado.mensaje);
+                auditoriaService.registrar(idAdminSesion, "USUARIO_CREAR", "USUARIO", resultado.usuarioId, resultado.mensaje, ip);
+
+                String mensajeFinal = resultado.mensaje;
+                // Activar MFA desde la propia creación: el administrador nunca ve el QR (lo verá
+                // el usuario en su primer login, igual que al activarlo después desde el menú de
+                // acciones); esto solo evita el paso extra de volver a entrar a activarlo aparte.
+                if ("true".equals(req.getParameter("activarMfaAlCrear"))) {
+                    ResultadoOperacion resultadoMfa = mfaService.iniciarActivacion(resultado.usuarioId, idAdminSesion);
+                    if (resultadoMfa.exitoso) {
+                        auditoriaService.registrar(idAdminSesion, "MFA_ACTIVAR", "USUARIO", resultado.usuarioId,
+                                "MFA activado durante la creación del usuario", ip);
+                        mensajeFinal += " Se activó también la verificación en dos pasos: deberá completarla en su primer inicio de sesión.";
+                    } else {
+                        mensajeFinal += " (No se pudo activar el MFA: " + resultadoMfa.mensaje + ")";
+                    }
+                }
+
+                req.getSession().setAttribute(Constantes.ATTR_MENSAJE, mensajeFinal);
                 resp.sendRedirect(req.getContextPath() + "/usuarios");
                 return;
             }

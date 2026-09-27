@@ -26,10 +26,17 @@ public class UsuarioService {
     public static class ResultadoOperacion {
         public final boolean exitoso;
         public final String mensaje;
+        /** Id del usuario afectado, solo poblado por {@link #registrar} (para poder encadenar la activación de MFA); {@code null} en el resto de operaciones. */
+        public final Integer usuarioId;
 
         public ResultadoOperacion(boolean exitoso, String mensaje) {
+            this(exitoso, mensaje, null);
+        }
+
+        public ResultadoOperacion(boolean exitoso, String mensaje, Integer usuarioId) {
             this.exitoso = exitoso;
             this.mensaje = mensaje;
+            this.usuarioId = usuarioId;
         }
     }
 
@@ -75,7 +82,7 @@ public class UsuarioService {
         nuevoUsuario.setCreadoPorId(idAdminCreador);
 
         int id = usuarioDAO.crear(nuevoUsuario);
-        return new ResultadoOperacion(true, "Usuario registrado correctamente con ID " + id + ".");
+        return new ResultadoOperacion(true, "Usuario registrado correctamente con ID " + id + ".", id);
     }
 
     /**
