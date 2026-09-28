@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.util.regex.Pattern;
 
 /**
  * Genera códigos QR bajo demanda a partir de un texto arbitrario, usado por el POS para
@@ -24,6 +25,13 @@ public class QrServlet extends HttpServlet {
     // dentro de la aplicación (monto a pagar, referencia de comprobante); evita que este
     // endpoint se use como un generador/alojador arbitrario de contenido en un QR.
     private static final int LARGO_MAXIMO_TEXTO = 300;
+
+    // Lista blanca explícita de caracteres permitidos: letras (con tildes/ñ), dígitos y la
+    // puntuación que realmente aparece en un monto a pagar o una referencia de comprobante
+    // (S/ 25.50, Ref. #123-A, etc.). Al validar contra una lista blanca (en vez de solo
+    // bloquear caracteres de control) queda explícito que el texto se sanitiza antes de
+    // usarse, no solo se filtra parcialmente.
+    private static final Pattern TEXTO_PERMITIDO = Pattern.compile("^[\\p{L}0-9\\s.,:;()/#\\-_@]*$");
 
     /**
      * @param req  petición HTTP; espera {@code ?texto=} con el contenido a codificar
@@ -45,12 +53,7 @@ public class QrServlet extends HttpServlet {
                     "El texto a codificar excede el máximo permitido (" + LARGO_MAXIMO_TEXTO + " caracteres).");
             return;
         }
-        // Rechaza caracteres de control (incluye saltos de línea, nulos, etc.): no tienen
-        // uso legítimo en un texto de QR de esta aplicación (monto a pagar, referencia de
-        // comprobante) y endurece la entrada aunque el resultado nunca se refleje como
-        // HTML (la respuesta es una imagen PNG generada por ZXing, no texto interpretado
-        // por el navegador: no hay una ruta real de XSS aquí, pero no cuesta ser estricto).
-        if (texto.chars().anyMatch(Character::isISOControl)) {
+        if (!TEXTO_PERMITIDO.matcher(texto).matches()) {
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "El texto contiene caracteres no permitidos.");
             return;
         }
