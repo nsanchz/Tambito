@@ -56,6 +56,26 @@
             </button>
         </div>
     </form>
+
+    <div class="bg-white rounded-xl shadow-sm p-6 flex flex-col gap-3">
+        <div>
+            <h3 class="text-base font-semibold">Alertas de inventario por correo</h3>
+            <p class="text-sm text-slate-500">
+                Todos los días se envía automáticamente a los administradores activos un resumen por
+                correo con el stock bajo, los lotes por vencer y los productos de baja rotación
+                (hora configurada en el servidor, <code>alertas.email.hora</code>). Si necesitas
+                enviarlo en este momento sin esperar a esa hora, usa el botón de abajo.
+            </p>
+        </div>
+        <form method="post" action="${pageContext.request.contextPath}/configuracion"
+              onsubmit="return iniciarEnvioConCarga(this, 'btn-enviar-resumen-alertas', 'Enviando...')">
+            <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+            <input type="hidden" name="accion" value="enviarResumenAlertas">
+            <button type="submit" id="btn-enviar-resumen-alertas" class="h-10 px-6 btn-primario text-white rounded-lg text-sm font-medium">
+                Enviar resumen ahora
+            </button>
+        </form>
+    </div>
 </div>
 
 <%@ include file="/WEB-INF/views/layout/pie.jspf" %>

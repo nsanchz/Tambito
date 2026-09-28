@@ -146,35 +146,48 @@ public class EmailService {
             return;
         }
 
-        StringBuilder cuerpo = new StringBuilder("Resumen diario de alertas de inventario:\n");
+        StringBuilder contenido = new StringBuilder(
+                "<p>Este es el resumen diario de alertas de inventario que requieren su atención:</p>");
 
         if (!stockBajo.isEmpty()) {
-            cuerpo.append("\nPRODUCTOS CON STOCK BAJO (").append(stockBajo.size()).append("):\n");
+            contenido.append("<p style=\"font-weight:bold;color:").append(COLOR_ACENTO)
+                    .append(";margin-bottom:0;\">⚠ Productos con stock bajo (").append(stockBajo.size()).append(")</p>")
+                    .append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border-collapse:collapse;\">")
+                    .append(encabezadoTabla("Producto", "Stock actual", "Mínimo"));
             for (Producto p : stockBajo) {
-                cuerpo.append(String.format("  - %-40s stock actual: %-6d mínimo: %d%n",
-                        p.getNombre(), p.getStockActual(), p.getStockMinimo()));
+                contenido.append(filaTabla(p.getNombre(), String.valueOf(p.getStockActual()), String.valueOf(p.getStockMinimo())));
             }
+            contenido.append("</table>");
         }
 
         if (!porVencer.isEmpty()) {
-            cuerpo.append("\nLOTES PRÓXIMOS A VENCER (").append(porVencer.size()).append("):\n");
+            contenido.append("<p style=\"font-weight:bold;color:#d97706;margin-bottom:0;\">⏰ Lotes próximos a vencer (")
+                    .append(porVencer.size()).append(")</p>")
+                    .append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border-collapse:collapse;\">")
+                    .append(encabezadoTabla("Producto", "Lote", "Vence", "Cantidad"));
             for (LoteProducto l : porVencer) {
-                cuerpo.append(String.format("  - %-40s lote %-12s vence: %-12s cantidad: %d%n",
-                        l.getProductoNombre(), l.getNumeroLote(), l.getFechaVencimiento(), l.getCantidadActual()));
+                contenido.append(filaTabla(l.getProductoNombre(), l.getNumeroLote(),
+                        String.valueOf(l.getFechaVencimiento()), String.valueOf(l.getCantidadActual())));
             }
+            contenido.append("</table>");
         }
 
         if (!bajaRotacion.isEmpty()) {
-            cuerpo.append("\nPRODUCTOS SIN VENTAS RECIENTES (").append(bajaRotacion.size()).append("):\n");
+            contenido.append("<p style=\"font-weight:bold;color:#64748b;margin-bottom:0;\">📉 Productos sin ventas recientes (")
+                    .append(bajaRotacion.size()).append(")</p>")
+                    .append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border-collapse:collapse;\">")
+                    .append(encabezadoTabla("Producto", "Stock actual"));
             for (Producto p : bajaRotacion) {
-                cuerpo.append(String.format("  - %-40s stock actual: %d%n", p.getNombre(), p.getStockActual()));
+                contenido.append(filaTabla(p.getNombre(), String.valueOf(p.getStockActual())));
             }
+            contenido.append("</table>");
         }
 
-        cuerpo.append("\nIngrese al sistema para más detalle.");
+        contenido.append("<p style=\"color:#64748b;font-size:12px;margin-top:18px;\">Ingrese al sistema para ver el detalle completo y tomar acción.</p>");
 
+        String html = plantillaHtml("Resumen diario de alertas de inventario", contenido.toString());
         for (String correo : correosAdmins) {
-            enviarTexto(correo, "Resumen diario de alertas de inventario — Bodega Tambito", cuerpo.toString());
+            enviarHtml(correo, "Resumen diario de alertas de inventario — Bodega TAMBITO", html);
         }
     }
 
@@ -216,5 +229,103 @@ public class EmailService {
         mensaje.setSubject(asunto);
         mensaje.setText(cuerpo);
         Transport.send(mensaje);
+    }
+
+    /**
+     * Envía un correo en HTML (con la misma identidad visual granate del sistema), usado por
+     * las notificaciones "cheveres" (resumen de alertas, solicitudes de desactivación). Nunca
+     * lanza más allá de {@link MessagingException}, igual que el resto de la clase.
+     */
+    private void enviarHtml(String destinatario, String asunto, String cuerpoHtml) throws MessagingException {
+        MimeMessage mensaje = new MimeMessage(sesion);
+        mensaje.setFrom(new InternetAddress(remitente));
+        mensaje.setRecipients(Message.RecipientType.TO, InternetAddress.parse(destinatario));
+        mensaje.setSubject(asunto);
+        mensaje.setContent(cuerpoHtml, "text/html; charset=UTF-8");
+        Transport.send(mensaje);
+    }
+
+    private static final String COLOR_ACENTO = "#C00000";
+
+    /** Envoltorio HTML común (header con marca + pie) para todos los correos "cheveres" nuevos. */
+    private String plantillaHtml(String tituloHeader, String contenidoInternoHtml) {
+        return "<!DOCTYPE html><html><body style=\"margin:0;padding:0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;\">"
+                + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f1f5f9;padding:24px 0;\">"
+                + "<tr><td align=\"center\">"
+                + "<table role=\"presentation\" width=\"580\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);\">"
+                + "<tr><td style=\"background:" + COLOR_ACENTO + ";padding:20px 28px;\">"
+                + "<span style=\"color:#ffffff;font-size:18px;font-weight:bold;\">Bodega TAMBITO</span><br>"
+                + "<span style=\"color:rgba(255,255,255,0.85);font-size:13px;\">" + tituloHeader + "</span>"
+                + "</td></tr>"
+                + "<tr><td style=\"padding:24px 28px;color:#1e293b;font-size:14px;line-height:1.55;\">"
+                + contenidoInternoHtml
+                + "</td></tr>"
+                + "<tr><td style=\"padding:16px 28px;background:#f8fafc;color:#94a3b8;font-size:11px;\">"
+                + "Correo automático del sistema de gestión — Bodega TAMBITO. No responder a este mensaje."
+                + "</td></tr>"
+                + "</table></td></tr></table></body></html>";
+    }
+
+    private String filaTabla(String... celdas) {
+        StringBuilder fila = new StringBuilder("<tr>");
+        for (String celda : celdas) {
+            fila.append("<td style=\"padding:6px 8px;border-bottom:1px solid #f1f5f9;font-size:13px;\">")
+                    .append(celda).append("</td>");
+        }
+        return fila.append("</tr>").toString();
+    }
+
+    private String encabezadoTabla(String... columnas) {
+        StringBuilder fila = new StringBuilder(
+                "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin:10px 0 18px;border-collapse:collapse;\"><tr>");
+        for (String col : columnas) {
+            fila.append("<th style=\"text-align:left;padding:6px 8px;background:#fef2f2;color:")
+                    .append(COLOR_ACENTO).append(";font-size:11px;text-transform:uppercase;\">").append(col).append("</th>");
+        }
+        return fila.append("</tr>").toString();
+    }
+
+    /**
+     * Notifica a los administradores que un vendedor solicitó desactivar un elemento
+     * (producto, proveedor, categoría o cliente) y necesita su aprobación.
+     */
+    public void notificarNuevaSolicitudDesactivacion(List<String> correosAdmins, String tipoEntidadLegible,
+                                                       String entidadNombre, String solicitanteNombre, String motivo)
+            throws MessagingException {
+        String contenido = "<p>El usuario <strong>" + solicitanteNombre + "</strong> solicitó desactivar "
+                + "el/la siguiente " + tipoEntidadLegible.toLowerCase() + ":</p>"
+                + "<p style=\"background:#f8fafc;border-left:3px solid " + COLOR_ACENTO + ";padding:10px 14px;margin:12px 0;\">"
+                + "<strong>" + entidadNombre + "</strong><br>"
+                + "<span style=\"color:#64748b;font-size:12px;\">Motivo: " + (motivo == null || motivo.isBlank() ? "(sin motivo indicado)" : motivo) + "</span>"
+                + "</p>"
+                + "<p>Ingrese al sistema (módulo Solicitudes) para aprobar o rechazar esta solicitud.</p>";
+
+        String html = plantillaHtml("Nueva solicitud de desactivación pendiente", contenido);
+        for (String correo : correosAdmins) {
+            enviarHtml(correo, "Solicitud pendiente: desactivar " + entidadNombre + " — Bodega TAMBITO", html);
+        }
+    }
+
+    /**
+     * Notifica al vendedor que solicitó una desactivación el resultado (aprobada/rechazada).
+     */
+    public void notificarResolucionSolicitudDesactivacion(String correoSolicitante, String tipoEntidadLegible,
+                                                            String entidadNombre, boolean aprobada,
+                                                            String resueltoPorNombre, String motivoRechazo)
+            throws MessagingException {
+        String colorEstado = aprobada ? "#059669" : "#dc2626";
+        String textoEstado = aprobada ? "APROBADA" : "RECHAZADA";
+        String contenido = "<p>Su solicitud de desactivar el/la " + tipoEntidadLegible.toLowerCase()
+                + " <strong>" + entidadNombre + "</strong> fue:</p>"
+                + "<p style=\"display:inline-block;background:" + colorEstado + ";color:#fff;padding:6px 14px;border-radius:999px;"
+                + "font-size:13px;font-weight:bold;margin:6px 0 14px;\">" + textoEstado + "</p>"
+                + "<p style=\"color:#64748b;font-size:13px;\">Resuelto por: " + resueltoPorNombre + "</p>"
+                + (!aprobada && motivoRechazo != null && !motivoRechazo.isBlank()
+                    ? "<p style=\"background:#fef2f2;border-left:3px solid #dc2626;padding:10px 14px;margin:12px 0;\">"
+                      + "<strong>Motivo del rechazo:</strong> " + motivoRechazo + "</p>"
+                    : "");
+
+        String html = plantillaHtml("Resultado de su solicitud de desactivación", contenido);
+        enviarHtml(correoSolicitante, "Solicitud " + textoEstado.toLowerCase() + ": " + entidadNombre + " — Bodega TAMBITO", html);
     }
 }

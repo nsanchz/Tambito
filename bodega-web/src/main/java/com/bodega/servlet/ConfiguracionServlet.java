@@ -1,5 +1,6 @@
 package com.bodega.servlet;
 
+import com.bodega.scheduler.AlertaEmailScheduler;
 import com.bodega.service.AuditoriaService;
 import com.bodega.service.ConfiguracionService;
 import com.bodega.util.ArchivoImagenUtil;
@@ -66,6 +67,18 @@ public class ConfiguracionServlet extends HttpServlet {
             throws ServletException, IOException {
 
         int idAdminSesion = (int) req.getSession().getAttribute(Constantes.SESSION_USUARIO_ID);
+
+        // Acción independiente del formulario de parámetros: envía el resumen de alertas de
+        // inventario (stock bajo/vencimientos/baja rotación) en este momento, a solicitud del
+        // administrador, sin esperar a la hora programada (ver AlertaEmailScheduler).
+        if ("enviarResumenAlertas".equals(req.getParameter("accion"))) {
+            String resultado = AlertaEmailScheduler.enviarAhora();
+            auditoriaService.registrar(idAdminSesion, "ALERTAS_RESUMEN_MANUAL", "CONFIGURACION", null,
+                    resultado, req.getRemoteAddr());
+            req.getSession().setAttribute(Constantes.ATTR_MENSAJE, resultado);
+            resp.sendRedirect(req.getContextPath() + "/configuracion");
+            return;
+        }
 
         try {
             Map<String, String> nuevosValores = new HashMap<>();

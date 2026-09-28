@@ -43,6 +43,34 @@
             border-color: #C00000;
             box-shadow: 0 0 0 3px rgba(192,0,0,0.25);
         }
+
+        /* Indicador deslizante del selector Administración/Tienda: una sola pastilla blanca
+           que se desplaza de un lado a otro (en vez de dos fondos independientes
+           apareciendo/desapareciendo), con un ligero rebote al asentarse que evoca el
+           vaivén del agua. */
+        #terminal-indicador {
+            transition: transform 550ms cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* Botón "Iniciar sesión": al enviarse, un relleno gris sube desde abajo como si se
+           llenara de agua, en vez del spinner genérico del resto de la app (esta pantalla
+           no incluye pie.jspf). El brillo superior se desliza para simular un pequeño
+           oleaje mientras se llena. */
+        #btn-login-relleno {
+            transition: height 900ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        #btn-login-relleno::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: rgba(255,255,255,0.6);
+            animation: ondaAgua 1.1s ease-in-out infinite;
+        }
+        @keyframes ondaAgua {
+            0%, 100% { transform: translateX(-15%); opacity: 0.4; }
+            50% { transform: translateX(15%); opacity: 0.9; }
+        }
     </style>
 </head>
 <body class="bg-black min-h-screen flex">
@@ -51,15 +79,15 @@
 <div class="w-full lg:w-[42%] min-h-screen flex flex-col justify-center px-8 sm:px-16 py-12 bg-gradient-to-br from-slate-900 to-black relative">
 
     <div class="max-w-sm w-full mx-auto">
-        <div class="flex items-center gap-3 mb-10">
+        <div class="flex flex-col items-center gap-2 mb-8">
             <img src="${pageContext.request.contextPath}/imagen?tipo=logo" alt="Logotipo de la tienda"
-                 class="h-9" onerror="this.style.display='none'">
+                 class="h-14" onerror="this.style.display='none'">
             <span class="text-slate-400 text-sm font-medium tracking-wide uppercase">
                 <c:out value="${nombreEmpresa}" default="Bodega TAMBITO"/>
             </span>
         </div>
 
-        <h1 class="titulo-cursiva text-5xl text-white mb-8">Iniciar sesión</h1>
+        <h1 class="titulo-cursiva text-5xl text-white mb-8 text-center">Iniciar sesión</h1>
 
         <c:if test="${not empty error}">
             <div class="bg-red-500/10 border border-red-500/30 text-red-300 rounded-lg p-3 mb-5 text-sm">
@@ -67,7 +95,8 @@
             </div>
         </c:if>
 
-        <form method="post" action="${pageContext.request.contextPath}/login" class="flex flex-col gap-5">
+        <form method="post" action="${pageContext.request.contextPath}/login" class="flex flex-col gap-5"
+              onsubmit="return iniciarLoginConCarga(this)">
             <div class="flex flex-col gap-1.5">
                 <label for="username" class="text-sm text-slate-300">Usuario o correo</label>
                 <input type="text" id="username" name="j_username" required autofocus
@@ -86,31 +115,33 @@
 
             <div class="flex flex-col gap-1.5">
                 <span class="text-sm text-slate-300">Terminal</span>
-                <div class="grid grid-cols-2 gap-2 p-1 rounded-lg campo-oscuro">
-                    <label class="relative">
-                        <input type="radio" name="terminalId" value="ADMINISTRACION" class="peer sr-only" checked>
+                <div class="relative grid grid-cols-2 p-1 rounded-lg campo-oscuro">
+                    <div id="terminal-indicador" class="absolute top-1 bottom-1 left-1 rounded-md bg-white"
+                         style="width: calc(50% - 4px); transform: translateX(0%);"></div>
+                    <label class="relative z-10 cursor-pointer">
+                        <input type="radio" name="terminalId" value="ADMINISTRACION" class="peer sr-only" checked
+                               onchange="moverIndicadorTerminal(this)">
                         <span class="flex items-center justify-center h-9 rounded-md text-xs font-medium text-slate-400
-                                     peer-checked:bg-white peer-checked:text-slate-900 cursor-pointer transition-colors">
+                                     peer-checked:text-slate-900 cursor-pointer transition-colors">
                             Administración
                         </span>
                     </label>
-                    <label class="relative">
-                        <input type="radio" name="terminalId" value="TIENDA" class="peer sr-only">
+                    <label class="relative z-10 cursor-pointer">
+                        <input type="radio" name="terminalId" value="TIENDA" class="peer sr-only"
+                               onchange="moverIndicadorTerminal(this)">
                         <span class="flex items-center justify-center h-9 rounded-md text-xs font-medium text-slate-400
-                                     peer-checked:bg-white peer-checked:text-slate-900 cursor-pointer transition-colors">
+                                     peer-checked:text-slate-900 cursor-pointer transition-colors">
                             Tienda
                         </span>
                     </label>
                 </div>
             </div>
 
-            <button type="submit"
-                    class="mt-3 h-12 bg-white hover:bg-slate-200 text-slate-900 rounded-full font-medium text-sm
-                           flex items-center justify-center gap-2 transition-colors">
-                Iniciar sesión
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-                </svg>
+            <button type="submit" id="btn-login"
+                    class="mt-3 h-12 relative overflow-hidden bg-white hover:bg-slate-200 text-slate-900 rounded-full font-medium text-sm
+                           flex items-center justify-center transition-colors">
+                <span id="btn-login-relleno" class="absolute inset-x-0 bottom-0 h-0 bg-slate-300/80"></span>
+                <span id="btn-login-texto" class="relative z-10">Iniciar sesión</span>
             </button>
         </form>
 
@@ -122,6 +153,30 @@
 
 <!-- Panel derecho: gráfico decorativo (oculto en pantallas pequeñas) -->
 <div class="hidden lg:block lg:w-[58%] min-h-screen bg-black malla-geometrica"></div>
+
+<script>
+    /** Desliza la pastilla del selector Administración/Tienda hacia el lado elegido. */
+    function moverIndicadorTerminal(radio) {
+        document.getElementById('terminal-indicador').style.transform =
+            radio.value === 'TIENDA' ? 'translateX(100%)' : 'translateX(0%)';
+    }
+
+    /**
+     * En vez del spinner genérico (esta pantalla no incluye pie.jspf), el botón se "llena"
+     * de gris de abajo hacia arriba como si fuera agua, mientras el formulario se envía de
+     * verdad. Siempre retorna true para que el submit continúe con normalidad.
+     */
+    function iniciarLoginConCarga(form) {
+        var boton = document.getElementById('btn-login');
+        if (boton.disabled) {
+            return true;
+        }
+        boton.disabled = true;
+        document.getElementById('btn-login-texto').textContent = 'Ingresando...';
+        document.getElementById('btn-login-relleno').style.height = '100%';
+        return true;
+    }
+</script>
 
 </body>
 </html>

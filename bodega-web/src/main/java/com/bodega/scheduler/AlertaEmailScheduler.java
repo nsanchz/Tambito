@@ -74,24 +74,52 @@ public final class AlertaEmailScheduler {
     }
 
     /**
+     * Envía el resumen de alertas de inventario en este mismo instante, fuera del horario
+     * programado — usado por el botón "Enviar resumen ahora" (solo ADMINISTRADOR, ver
+     * ConfiguracionServlet). Reutiliza exactamente la misma lógica que la ejecución diaria
+     * automática, así que ambos caminos arman el correo de forma idéntica.
+     *
+     * @return mensaje legible para mostrarle al administrador que presionó el botón
+     *         (cuántas alertas se consolidaron y a cuántos administradores se les envió, o por
+     *         qué no se envió nada)
+     */
+    public static String enviarAhora() {
+        return enviarResumenDiario();
+    }
+
+    /**
      * Reúne las tres alertas de inventario y envía el resumen a los administradores activos.
      * Cualquier fallo (de consulta o de envío) solo se registra en el log: nunca debe tumbar
      * el hilo del scheduler.
+     *
+     * @return mensaje legible con el resultado (usado por {@link #enviarAhora()}; la ejecución
+     *         programada simplemente lo descarta)
      */
-    private static void enviarResumenDiario() {
+    private static String enviarResumenDiario() {
         try {
             List<Producto> stockBajo = PRODUCTO_SERVICE.listarConStockBajoMinimo();
             List<LoteProducto> porVencer = ALERTA_SERVICE.lotesPorVencer();
             List<Producto> bajaRotacion = ALERTA_SERVICE.productosBajaRotacion();
+
+            if (stockBajo.isEmpty() && porVencer.isEmpty() && bajaRotacion.isEmpty()) {
+                return "No se envió ningún correo: no hay alertas de inventario pendientes en este momento.";
+            }
 
             List<String> correosAdmins = USUARIO_DAO.listar(Rol.ADMINISTRADOR, EstadoCuenta.ACTIVO, null).stream()
                     .map(Usuario::getCorreo)
                     .filter(correo -> correo != null && !correo.isBlank())
                     .toList();
 
+            if (correosAdmins.isEmpty()) {
+                return "No se envió ningún correo: no hay administradores activos con correo registrado.";
+            }
+
             EMAIL_SERVICE.notificarResumenAlertasInventario(correosAdmins, stockBajo, porVencer, bajaRotacion);
+            int totalAlertas = stockBajo.size() + porVencer.size() + bajaRotacion.size();
+            return "Resumen enviado a " + correosAdmins.size() + " administrador(es) con " + totalAlertas + " alerta(s).";
         } catch (Exception e) {
             System.err.println("Error al enviar el resumen diario de alertas de inventario: " + e.getMessage());
+            return "No se pudo enviar el resumen: " + e.getMessage();
         }
     }
 
