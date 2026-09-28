@@ -2,3 +2,8 @@ target/
 *.class
 .DS_Store
 *.war
+
+# Contiene credenciales reales (contraseñas de BD, clave de cifrado AES, contraseña de
+# aplicación de Gmail, tokens de APIs de terceros) — nunca debe versionarse. Ver
+# database.properties.example para la plantilla con placeholders.
+bodega-web/src/main/resources/database.properties

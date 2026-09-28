@@ -60,6 +60,9 @@ public class QrServlet extends HttpServlet {
             resp.setContentType("image/png");
             resp.setHeader("Cache-Control", "no-store");
             resp.setHeader("Content-Disposition", "inline; filename=\"qr.png\"");
+            // Evita que el navegador intente "adivinar" el tipo de contenido a partir de los
+            // bytes (content sniffing) y lo reinterprete como HTML/JS en vez de imagen.
+            resp.setHeader("X-Content-Type-Options", "nosniff");
             resp.setContentLength(png.length);
             resp.getOutputStream().write(png);
             resp.getOutputStream().flush();

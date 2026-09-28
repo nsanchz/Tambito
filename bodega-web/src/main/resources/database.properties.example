@@ -1,0 +1,47 @@
+# Plantilla de configuración. Copiar como "database.properties" (mismo directorio) y
+# reemplazar cada valor por el real — ese archivo está en .gitignore y nunca debe
+# versionarse, porque contiene credenciales reales.
+db.url=jdbc:mysql://localhost:3306/bodega_db?useSSL=false&allowPublicKeyRetrieval=true
+db.username=bodega_app
+db.password=CAMBIAR_ESTA_CONTRASENA
+
+# Configuración del pool HikariCP
+db.pool.maxSize=10
+db.pool.minIdle=2
+db.pool.connectionTimeout=30000
+db.pool.idleTimeout=600000
+db.pool.maxLifetime=1800000
+
+# Clave de cifrado de aplicación (AES-256-GCM, Base64 de 32 bytes) usada por
+# com.bodega.util.CifradoUtil para cifrar columnas sensibles (ej. clientes.direccion).
+# Generar una propia, por ejemplo: openssl rand -base64 32
+app.encryption.key=CAMBIAR_ESTA_CLAVE
+
+# Respaldos automáticos de base de datos (ver com.bodega.service.BackupService y
+# com.bodega.scheduler.BackupScheduler). Usuario dedicado de solo lectura para el respaldo.
+db.backup.username=bodega_backup
+db.backup.password=CAMBIAR_ESTA_CONTRASENA
+db.backup.mysqldump.path=/usr/bin/mysqldump
+db.backup.dir=/opt/tomcat/bodega_backups
+db.backup.retencion.dias=30
+db.backup.hora=2
+
+# Configuración SMTP para las notificaciones por correo (ver com.bodega.service.EmailService).
+# mail.smtp.password es una "Contraseña de aplicación" de Gmail, no la contraseña real.
+mail.smtp.host=smtp.gmail.com
+mail.smtp.port=587
+mail.smtp.username=CAMBIAR_ESTE_CORREO@gmail.com
+mail.smtp.password=CAMBIAR_ESTA_CONTRASENA_DE_APLICACION
+mail.from=CAMBIAR_ESTE_CORREO@gmail.com
+
+# Hora del día (0-23, hora local del servidor) del resumen diario de alertas de inventario.
+alertas.email.hora=7
+
+# Token Bearer de la API gratuita de apisperu.com (https://dniruc.apisperu.com), usado por
+# com.bodega.service.ConsultaDocumentoService. Puede quedar vacío: si falla, el sistema
+# simplemente no autocompleta los datos del cliente.
+api.rucdni.token=CAMBIAR_ESTE_TOKEN
+
+# Token Bearer de la API gratuita de tipo de cambio de apisperu.com, usado por
+# com.bodega.service.TipoCambioService. Puede quedar vacío: si falla, no se ofrece pagar en USD.
+api.tipocambio.token=CAMBIAR_ESTE_TOKEN
