@@ -33,6 +33,14 @@
         <jakarta-mail-api.version>2.1.3</jakarta-mail-api.version>
         <angus-mail.version>2.0.3</angus-mail.version>
         <totp.version>1.7.1</totp.version>
+
+        <!-- Sobrescrituras de versión de dependencias TRANSITIVAS (no se usan directamente
+             en el código, llegan arrastradas por mysql-connector-j/poi/poi-ooxml) para
+             cerrar CVEs conocidos que Aikido reporta contra las versiones que esas
+             librerías traen por defecto. -->
+        <protobuf-java.version>3.25.5</protobuf-java.version>
+        <log4j-api.version>2.25.5</log4j-api.version>
+        <commons-compress.version>1.26.0</commons-compress.version>
     </properties>
 
     <dependencies>
@@ -128,6 +136,28 @@
             <groupId>dev.samstevens.totp</groupId>
             <artifactId>totp</artifactId>
             <version>${totp.version}</version>
+        </dependency>
+
+        <!-- ===================== SOBRESCRITURAS DE DEPENDENCIAS TRANSITIVAS (CVEs) =====================
+             Estas librerías no se usan directamente: se declaran aquí solo para forzar una
+             versión más nueva que la que traen mysql-connector-j / poi / poi-ooxml por
+             defecto, y así cerrar las vulnerabilidades conocidas de esas versiones antiguas
+             (Maven resuelve por "nearest wins": una dependencia declarada aquí, en el mismo
+             pom.xml, gana sobre la misma librería heredada transitivamente). -->
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>${protobuf-java.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>${log4j-api.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>${commons-compress.version}</version>
         </dependency>
 
         <!-- ===================== PRUEBAS UNITARIAS ===================== -->

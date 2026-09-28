@@ -490,22 +490,23 @@ GROUP BY c.id, c.nombre, p.id, p.nombre;
 -- servidor MySQL corren en la misma máquina; en un despliegue cloud real
 -- esto debe ajustarse a la red interna del servidor de aplicación, nunca '%'.
 --
--- Las contraseñas de abajo son para el entorno LOCAL/ACADÉMICO de este
--- proyecto. En un entorno productivo real NO deben vivir en texto plano en
--- este script: deben inyectarse desde un gestor de secretos (AWS Secrets
--- Manager, Azure Key Vault, variables de entorno protegidas, etc.) tanto
--- al crear el usuario en MySQL como en database.properties del lado Java.
+-- Este script NUNCA debe llevar contraseñas reales: se versiona en git (y este
+-- proyecto ya vive en un repositorio de GitHub), así que cualquier valor real
+-- escrito aquí queda expuesto en el historial. Reemplaza los placeholders
+-- CAMBIAR_CONTRASENA_* de abajo por contraseñas reales SOLO al ejecutar este
+-- script a mano contra el servidor (o bórralas de tu copia local antes de
+-- hacer commit); nunca las dejes así en el archivo que subes a git.
 -- =====================================================================
 
 -- 1) Usuario de APLICACIÓN (el que usa HikariCP en com.bodega.config.DatabaseConfig).
 --    Solo CRUD de datos. Nunca DDL (CREATE/ALTER/DROP/INDEX), nunca GRANT.
-CREATE USER IF NOT EXISTS 'bodega_app'@'localhost' IDENTIFIED BY 'App_Bodega_2026#Xk9';
+CREATE USER IF NOT EXISTS 'bodega_app'@'localhost' IDENTIFIED BY 'CAMBIAR_CONTRASENA_APP';
 GRANT SELECT, INSERT, UPDATE, DELETE ON bodega_db.* TO 'bodega_app'@'localhost';
 
 -- 2) Usuario ADMINISTRADOR / de MIGRACIONES (DDL). Se usa solo desde
 --    herramientas administrativas (ej. al aplicar este propio script,
 --    o un cliente SQL de un DBA) — la aplicación web NUNCA se conecta con él.
-CREATE USER IF NOT EXISTS 'bodega_dba'@'localhost' IDENTIFIED BY 'Dba_Bodega_2026#Qz7';
+CREATE USER IF NOT EXISTS 'bodega_dba'@'localhost' IDENTIFIED BY 'CAMBIAR_CONTRASENA_DBA';
 GRANT ALL PRIVILEGES ON bodega_db.* TO 'bodega_dba'@'localhost';
 
 -- 3) Usuario de RESPALDOS (usado únicamente por com.bodega.service.BackupService
@@ -515,7 +516,7 @@ GRANT ALL PRIVILEGES ON bodega_db.* TO 'bodega_dba'@'localhost';
 --    arriba) y EVENT/TRIGGER (para que el dump incluya objetos programables
 --    si se agregan más adelante). Sin INSERT/UPDATE/DELETE: este usuario
 --    jamás debería poder modificar datos.
-CREATE USER IF NOT EXISTS 'bodega_backup'@'localhost' IDENTIFIED BY 'Bkp_Bodega_2026#Rt3';
+CREATE USER IF NOT EXISTS 'bodega_backup'@'localhost' IDENTIFIED BY 'CAMBIAR_CONTRASENA_BACKUP';
 GRANT SELECT, LOCK TABLES, SHOW VIEW, EVENT, TRIGGER ON bodega_db.* TO 'bodega_backup'@'localhost';
 
 FLUSH PRIVILEGES;
