@@ -79,19 +79,41 @@
                             </span>
                         </td>
                         <td class="px-4 py-3 text-right">
-                            <a href="${pageContext.request.contextPath}/ventas?ver=${v.id}" class="text-blue-600 hover:underline">Ver</a>
-                            &nbsp;·&nbsp;
-                            <a href="${pageContext.request.contextPath}/ventas?ticketPdf=${v.id}" target="_blank" class="text-slate-500 hover:underline">Ticket</a>
-                            <c:if test="${sessionScope.usuarioRol == 'ADMINISTRADOR' && v.estado == 'COMPLETADA'}">
-                                &nbsp;·&nbsp;
-                                <button type="button" onclick="abrirModalAnulacion(${v.id}, '${fn:escapeXml(v.numeroComprobante)}')"
-                                        class="text-red-600 hover:underline">Anular</button>
-                            </c:if>
+                            <button type="button" onclick="alternarMenuAcciones(this)"
+                                    class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                                    title="Más acciones">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                                    <circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/>
+                                </svg>
+                            </button>
+                            <div class="menu-acciones hidden fixed z-50 w-56 bg-white rounded-xl shadow-lg border border-slate-100 py-1.5 text-sm">
+                                <a href="${pageContext.request.contextPath}/ventas?ver=${v.id}"
+                                   class="w-full text-left px-3 py-2 flex items-center gap-2.5 text-slate-600 hover:bg-slate-50">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    Ver
+                                </a>
+                                <a href="${pageContext.request.contextPath}/ventas?ticketPdf=${v.id}" target="_blank"
+                                   class="w-full text-left px-3 py-2 flex items-center gap-2.5 text-slate-600 hover:bg-slate-50">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.32 0a5.966 5.966 0 002.08.266m-13.4-.266a5.966 5.966 0 01-2.08.266"/></svg>
+                                    Ticket
+                                </a>
+                                <c:if test="${sessionScope.usuarioRol == 'ADMINISTRADOR' && v.estado == 'COMPLETADA'}">
+                                    <div class="my-1 border-t border-slate-100"></div>
+                                    <button type="button" onclick="abrirModalAnulacion(${v.id}, '${fn:escapeXml(v.numeroComprobante)}')"
+                                            class="w-full text-left px-3 py-2 flex items-center gap-2.5 text-red-600 hover:bg-red-50">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        Anular
+                                    </button>
+                                </c:if>
+                            </div>
                         </td>
                     </tr>
                 </c:forEach>
                 <c:if test="${empty ventas}">
-                    <tr><td colspan="8" class="px-4 py-6 text-center text-slate-400">No se encontraron ventas con los filtros aplicados.</td></tr>
+                    <tr><td colspan="8" class="px-4 py-10 text-center text-slate-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-9 w-9 mx-auto mb-2 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.75h16.5m-16.5 0V6.108c0-.621.504-1.125 1.125-1.125h14.25c.621 0 1.125.504 1.125 1.125V9.75m-16.5 0v8.25c0 .621.504 1.125 1.125 1.125h14.25c.621 0 1.125-.504 1.125-1.125V9.75M9 12.75h6"/></svg>
+                        <p>No se encontraron ventas con los filtros aplicados.</p>
+                    </td></tr>
                 </c:if>
                 </tbody>
             </table>
@@ -149,13 +171,14 @@
 <!-- Modal: Anulación de venta (solo ADMINISTRADOR) -->
 <c:if test="${sessionScope.usuarioRol == 'ADMINISTRADOR'}">
     <div id="modal-anulacion" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-        <div class="bg-white w-full max-w-md rounded-xl shadow-xl overflow-hidden">
+        <div class="tarjeta-modal transition-all duration-150 ease-out opacity-0 scale-95 bg-white w-full max-w-md rounded-xl shadow-xl overflow-hidden">
             <div class="px-6 py-4 bg-red-50 flex items-center justify-between">
                 <h3 class="font-semibold text-red-700">Anulación de venta y reversión de stock</h3>
-                <button type="button" onclick="document.getElementById('modal-anulacion').classList.add('hidden')"
+                <button type="button" onclick="cerrarModalConTransicion('modal-anulacion')"
                         class="text-slate-400 hover:text-slate-700">Cerrar</button>
             </div>
-            <form method="post" action="${pageContext.request.contextPath}/ventas" class="p-6 flex flex-col gap-4">
+            <form method="post" action="${pageContext.request.contextPath}/ventas" class="p-6 flex flex-col gap-4"
+                  onsubmit="return iniciarEnvioConCarga(this, 'btn-confirmar-anulacion', 'Anulando...')">
                 <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                 <p class="text-sm text-slate-600">
                     ¿Está seguro de anular la venta <strong id="texto-numero-venta"></strong>? El stock de los
@@ -168,9 +191,9 @@
                     <textarea name="motivoAnulacion" required rows="2" class="p-3 border border-slate-300 rounded-lg text-sm resize-none"></textarea>
                 </div>
                 <div class="flex items-center justify-end gap-3">
-                    <button type="button" onclick="document.getElementById('modal-anulacion').classList.add('hidden')"
+                    <button type="button" onclick="cerrarModalConTransicion('modal-anulacion')"
                             class="h-9 px-4 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm">Cancelar</button>
-                    <button type="submit" class="h-9 px-5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium">Confirmar anulación</button>
+                    <button type="submit" id="btn-confirmar-anulacion" class="h-9 px-5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium">Confirmar anulación</button>
                 </div>
             </form>
         </div>
@@ -180,7 +203,29 @@
         function abrirModalAnulacion(ventaId, numeroComprobante) {
             document.getElementById('input-venta-id').value = ventaId;
             document.getElementById('texto-numero-venta').textContent = numeroComprobante;
-            document.getElementById('modal-anulacion').classList.remove('hidden');
+            abrirModalConTransicion('modal-anulacion');
+        }
+
+        /**
+         * Da una transición simple de entrada/salida (fade + scale) al modal de esta vista,
+         * en vez de que aparezca/desaparezca de golpe al togglear la clase "hidden".
+         */
+        function abrirModalConTransicion(idModal) {
+            var modal = document.getElementById(idModal);
+            var tarjeta = modal.querySelector('.tarjeta-modal');
+            modal.classList.remove('hidden');
+            requestAnimationFrame(function () {
+                tarjeta.classList.remove('opacity-0', 'scale-95');
+                tarjeta.classList.add('opacity-100', 'scale-100');
+            });
+        }
+
+        function cerrarModalConTransicion(idModal) {
+            var modal = document.getElementById(idModal);
+            var tarjeta = modal.querySelector('.tarjeta-modal');
+            tarjeta.classList.remove('opacity-100', 'scale-100');
+            tarjeta.classList.add('opacity-0', 'scale-95');
+            setTimeout(function () { modal.classList.add('hidden'); }, 150);
         }
     </script>
 </c:if>

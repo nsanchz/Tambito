@@ -44,7 +44,7 @@
                         <td class="px-4 py-3">
                             <span class="px-2 py-0.5 rounded text-xs font-medium
                                 ${fn:contains(r.accion, 'FALLIDO') || fn:contains(r.accion, 'BLOQUEADA') || fn:contains(r.accion, 'ANULADA')
-                                  ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'}">
+                                  ? 'bg-red-100 text-red-700 animate-pulse' : 'bg-slate-100 text-slate-600'}">
                                 <c:out value="${r.accion}"/>
                             </span>
                         </td>
@@ -63,7 +63,10 @@
                     </tr>
                 </c:forEach>
                 <c:if test="${empty registros}">
-                    <tr><td colspan="6" class="px-4 py-6 text-center text-slate-400">No hay eventos registrados con los filtros aplicados.</td></tr>
+                    <tr><td colspan="6" class="px-4 py-10 text-center text-slate-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-9 w-9 mx-auto mb-2 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.75h16.5m-16.5 0V6.108c0-.621.504-1.125 1.125-1.125h14.25c.621 0 1.125.504 1.125 1.125V9.75m-16.5 0v8.25c0 .621.504 1.125 1.125 1.125h14.25c.621 0 1.125-.504 1.125-1.125V9.75M9 12.75h6"/></svg>
+                        <p>No hay eventos registrados con los filtros aplicados.</p>
+                    </td></tr>
                 </c:if>
                 </tbody>
             </table>

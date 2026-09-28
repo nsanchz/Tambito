@@ -1,5 +1,6 @@
 <%@ page pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -9,48 +10,77 @@
     <meta name="context-path" content="${pageContext.request.contextPath}">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/estilos.css">
+    <style>
+        /* Paleta unificada con el login (granate) y microinteracciones del layout compartido
+           por TODAS las vistas autenticadas — cambiar acá impacta toda la app de una vez. */
+        :root { --acento: #C00000; --acento-suave: rgba(192,0,0,0.16); }
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+        .anim-entrada { animation: fadeSlideIn .4s ease both; }
+        .nav-link {
+            border-left: 3px solid transparent;
+            transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+        }
+        .nav-link:hover { background-color: rgba(255,255,255,0.08); }
+        .nav-activo { background-color: var(--acento-suave); border-left-color: var(--acento); font-weight: 500; color: #fff; }
+        .avatar-iniciales {
+            width: 28px; height: 28px; border-radius: 9999px; background: var(--acento); color: #fff;
+            display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700;
+            flex-shrink: 0;
+        }
+        .btn-primario {
+            background-color: var(--acento); color: #fff; transition: background-color .15s ease, transform .1s ease;
+        }
+        .btn-primario:hover { background-color: #a30000; }
+        .btn-primario:active { transform: scale(0.97); }
+        /* Spinner reutilizable para botones "procesando..." (ver iniciarEnvioConCarga en pie.jspf) */
+        .spinner-inline {
+            display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4);
+            border-top-color: #fff; border-radius: 50%; animation: girar .6s linear infinite; margin-right: 6px;
+        }
+        @keyframes girar { to { transform: rotate(360deg); } }
+    </style>
 </head>
 <body class="bg-slate-50 text-slate-900 antialiased">
 
 <aside class="fixed left-0 top-0 h-screen w-64 bg-slate-900 text-white flex flex-col justify-between z-40">
     <div class="flex flex-col">
-        <div class="h-14 px-4 flex items-center gap-2 bg-black/20">
+        <div class="h-14 px-4 flex items-center gap-2 bg-black/20 anim-entrada">
             <img src="${pageContext.request.contextPath}/imagen?tipo=logo" alt="Logo"
                  class="h-7 w-7 rounded object-cover" onerror="this.style.display='none'">
             <span class="font-bold text-lg truncate"><c:out value="${sessionScope.nombreEmpresa}" default="BodegaControl"/></span>
         </div>
         <nav class="px-2 py-3 flex flex-col gap-1">
             <a href="${pageContext.request.contextPath}/panel-de-control"
-               class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'panel-de-control' ? 'bg-blue-600 font-medium' : ''}">Panel de control</a>
+               class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${moduloActivo == 'panel-de-control' ? 'nav-activo' : ''}">Panel de control</a>
             <a href="${pageContext.request.contextPath}/pos"
-               class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'pos' ? 'bg-blue-600 font-medium' : ''}">Punto de Venta (POS)</a>
+               class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${moduloActivo == 'pos' ? 'nav-activo' : ''}">Punto de Venta (POS)</a>
             <a href="${pageContext.request.contextPath}/turno-caja"
-               class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'turno-caja' ? 'bg-blue-600 font-medium' : ''}">Turno de Caja</a>
+               class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${moduloActivo == 'turno-caja' ? 'nav-activo' : ''}">Turno de Caja</a>
             <a href="${pageContext.request.contextPath}/ventas"
-               class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'ventas' ? 'bg-blue-600 font-medium' : ''}">Ventas</a>
+               class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${moduloActivo == 'ventas' ? 'nav-activo' : ''}">Ventas</a>
             <a href="${pageContext.request.contextPath}/productos"
-               class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'productos' ? 'bg-blue-600 font-medium' : ''}">Productos</a>
+               class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${moduloActivo == 'productos' ? 'nav-activo' : ''}">Productos</a>
             <a href="${pageContext.request.contextPath}/inventario"
-               class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'inventario' ? 'bg-blue-600 font-medium' : ''}">Inventario</a>
+               class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${moduloActivo == 'inventario' ? 'nav-activo' : ''}">Inventario</a>
             <a href="${pageContext.request.contextPath}/proveedores"
-               class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'proveedores' ? 'bg-blue-600 font-medium' : ''}">Proveedores</a>
+               class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${moduloActivo == 'proveedores' ? 'nav-activo' : ''}">Proveedores</a>
             <a href="${pageContext.request.contextPath}/ordenes-compra"
-               class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'ordenes-compra' ? 'bg-blue-600 font-medium' : ''}">Órdenes de compra</a>
+               class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${moduloActivo == 'ordenes-compra' ? 'nav-activo' : ''}">Órdenes de compra</a>
             <a href="${pageContext.request.contextPath}/categorias"
-               class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'categorias' ? 'bg-blue-600 font-medium' : ''}">Categorías</a>
+               class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${moduloActivo == 'categorias' ? 'nav-activo' : ''}">Categorías</a>
             <a href="${pageContext.request.contextPath}/clientes"
-               class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'clientes' ? 'bg-blue-600 font-medium' : ''}">Clientes</a>
+               class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${moduloActivo == 'clientes' ? 'nav-activo' : ''}">Clientes</a>
             <c:if test="${sessionScope.usuarioRol == 'ADMINISTRADOR'}">
                 <a href="${pageContext.request.contextPath}/usuarios"
-                   class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'usuarios' ? 'bg-blue-600 font-medium' : ''}">Usuarios</a>
+                   class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${moduloActivo == 'usuarios' ? 'nav-activo' : ''}">Usuarios</a>
                 <a href="${pageContext.request.contextPath}/reportes"
-                   class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'reportes' ? 'bg-blue-600 font-medium' : ''}">Reportes</a>
+                   class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${moduloActivo == 'reportes' ? 'nav-activo' : ''}">Reportes</a>
                 <a href="${pageContext.request.contextPath}/auditoria"
-                   class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'auditoria' ? 'bg-blue-600 font-medium' : ''}">Auditoría</a>
+                   class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${moduloActivo == 'auditoria' ? 'nav-activo' : ''}">Auditoría</a>
                 <a href="${pageContext.request.contextPath}/respaldos"
-                   class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'respaldos' ? 'bg-blue-600 font-medium' : ''}">Respaldos</a>
+                   class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${moduloActivo == 'respaldos' ? 'nav-activo' : ''}">Respaldos</a>
                 <a href="${pageContext.request.contextPath}/configuracion"
-                   class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/10 ${moduloActivo == 'configuracion' ? 'bg-blue-600 font-medium' : ''}">Configuración</a>
+                   class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${moduloActivo == 'configuracion' ? 'nav-activo' : ''}">Configuración</a>
             </c:if>
         </nav>
     </div>
@@ -58,11 +88,14 @@
 
 <div class="pl-64">
     <header class="fixed top-0 left-64 right-0 h-14 bg-white shadow-sm z-30 flex items-center justify-between px-6">
-        <h1 class="text-sm font-medium text-slate-500"><c:out value="${tituloPagina}"/></h1>
+        <h1 class="text-sm font-medium text-slate-500 anim-entrada"><c:out value="${tituloPagina}"/></h1>
         <div class="flex items-center gap-4">
-            <span class="text-sm font-medium"><c:out value="${sessionScope.usuarioNombre}"/></span>
-            <a href="${pageContext.request.contextPath}/perfil" title="Mi perfil" class="text-slate-500 hover:text-slate-900">Perfil</a>
-            <a href="${pageContext.request.contextPath}/logout" title="Cerrar sesión" class="text-red-600 hover:text-red-800">Salir</a>
+            <div class="flex items-center gap-2">
+                <span class="avatar-iniciales">${fn:toUpperCase(fn:substring(sessionScope.usuarioNombre, 0, 1))}</span>
+                <span class="text-sm font-medium"><c:out value="${sessionScope.usuarioNombre}"/></span>
+            </div>
+            <a href="${pageContext.request.contextPath}/perfil" title="Mi perfil" class="text-slate-500 hover:text-slate-900 transition-colors">Perfil</a>
+            <a href="${pageContext.request.contextPath}/logout" title="Cerrar sesión" class="text-red-600 hover:text-red-800 transition-colors">Salir</a>
         </div>
     </header>
 

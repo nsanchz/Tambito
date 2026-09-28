@@ -23,8 +23,8 @@
             <h2 class="text-2xl font-bold">Gestión de Clientes y Fidelización</h2>
             <p class="text-sm text-slate-500">Directorio de clientes registrados para Boleta/Factura y su historial de compras.</p>
         </div>
-        <button type="button" onclick="document.getElementById('modal-nuevo-cliente').classList.remove('hidden')"
-                class="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">
+        <button type="button" onclick="abrirModalConTransicion('modal-nuevo-cliente')"
+                class="h-10 px-4 btn-primario rounded-lg text-sm font-medium">
             + Nuevo cliente
         </button>
     </div>
@@ -65,8 +65,8 @@
                         <td class="px-4 py-3 text-slate-500"><c:out value="${cli.correo}"/></td>
                         <td class="px-4 py-3 text-center">
                             <span class="px-2 py-0.5 rounded-full text-xs font-medium
-                                ${cli.categoriaFidelizacion == 'VIP' ? 'bg-purple-100 text-purple-700' :
-                                  cli.categoriaFidelizacion == 'FRECUENTE' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}">
+                                ${cli.categoriaFidelizacion == 'VIP' ? 'bg-red-50 text-red-700' :
+                                  cli.categoriaFidelizacion == 'FRECUENTE' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-500'}">
                                 <c:out value="${cli.categoriaFidelizacion}"/> · <c:out value="${cli.puntosFidelizacion}"/> pts
                             </span>
                         </td>
@@ -76,21 +76,38 @@
                             </span>
                         </td>
                         <td class="px-4 py-3 text-right">
-                            <a href="${pageContext.request.contextPath}/clientes?ver=${cli.id}" class="text-blue-600 hover:underline">Ver ficha</a>
-                            &nbsp;·&nbsp;
-                            <form method="post" action="${pageContext.request.contextPath}/clientes" class="inline">
-                                <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
-                                <input type="hidden" name="accion" value="${cli.estado == 'ACTIVO' ? 'desactivar' : 'reactivar'}">
-                                <input type="hidden" name="clienteId" value="${cli.id}">
-                                <button type="submit" class="text-slate-500 hover:text-red-600">
-                                    <c:out value="${cli.estado == 'ACTIVO' ? 'Desactivar' : 'Reactivar'}"/>
-                                </button>
-                            </form>
+                            <button type="button" onclick="alternarMenuAcciones(this)"
+                                    class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                                    title="Más acciones">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                                    <circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/>
+                                </svg>
+                            </button>
+                            <div class="menu-acciones hidden fixed z-50 w-56 bg-white rounded-xl shadow-lg border border-slate-100 py-1.5 text-sm">
+                                <a href="${pageContext.request.contextPath}/clientes?ver=${cli.id}"
+                                   class="w-full text-left px-3 py-2 flex items-center gap-2.5 text-slate-600 hover:bg-slate-50">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    Ver ficha
+                                </a>
+                                <div class="my-1 border-t border-slate-100"></div>
+                                <form method="post" action="${pageContext.request.contextPath}/clientes">
+                                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+                                    <input type="hidden" name="accion" value="${cli.estado == 'ACTIVO' ? 'desactivar' : 'reactivar'}">
+                                    <input type="hidden" name="clienteId" value="${cli.id}">
+                                    <button type="submit" class="w-full text-left px-3 py-2 flex items-center gap-2.5 ${cli.estado == 'ACTIVO' ? 'text-red-600 hover:bg-red-50' : 'text-emerald-600 hover:bg-emerald-50'}">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5.636 5.636a9 9 0 1012.728 0M12 3v9"/></svg>
+                                        <c:out value="${cli.estado == 'ACTIVO' ? 'Desactivar' : 'Reactivar'}"/>
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                 </c:forEach>
                 <c:if test="${empty clientes}">
-                    <tr><td colspan="7" class="px-4 py-6 text-center text-slate-400">No se encontraron clientes registrados.</td></tr>
+                    <tr><td colspan="7" class="px-4 py-10 text-center text-slate-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-9 w-9 mx-auto mb-2 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.75h16.5m-16.5 0V6.108c0-.621.504-1.125 1.125-1.125h14.25c.621 0 1.125.504 1.125 1.125V9.75m-16.5 0v8.25c0 .621.504 1.125 1.125 1.125h14.25c.621 0 1.125-.504 1.125-1.125V9.75M9 12.75h6"/></svg>
+                        <p>No se encontraron clientes registrados.</p>
+                    </td></tr>
                 </c:if>
                 </tbody>
             </table>
@@ -105,8 +122,8 @@
                     <div class="flex items-center gap-2">
                         <h3 class="text-lg font-semibold"><c:out value="${clienteSeleccionado.nombreCompleto}"/></h3>
                         <span class="px-2 py-0.5 rounded-full text-xs font-medium
-                            ${clienteSeleccionado.categoriaFidelizacion == 'VIP' ? 'bg-purple-100 text-purple-700' :
-                              clienteSeleccionado.categoriaFidelizacion == 'FRECUENTE' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}">
+                            ${clienteSeleccionado.categoriaFidelizacion == 'VIP' ? 'bg-red-50 text-red-700' :
+                              clienteSeleccionado.categoriaFidelizacion == 'FRECUENTE' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-500'}">
                             <c:out value="${clienteSeleccionado.categoriaFidelizacion}"/>
                         </span>
                     </div>
@@ -132,7 +149,7 @@
                 <input type="email" name="correo" value="${clienteSeleccionado.correo}" placeholder="Correo *" required class="h-9 px-3 border border-slate-300 rounded-lg text-sm">
                 <input type="text" name="direccion" value="${clienteSeleccionado.direccion}" placeholder="Dirección" class="h-9 px-3 border border-slate-300 rounded-lg text-sm">
                 <div class="col-span-2 flex justify-end">
-                    <button type="submit" class="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">Actualizar datos</button>
+                    <button type="submit" class="h-9 px-4 btn-primario rounded-lg text-sm font-medium">Actualizar datos</button>
                 </div>
             </form>
 
@@ -160,7 +177,10 @@
                     </tr>
                 </c:forEach>
                 <c:if test="${empty historialCompras}">
-                    <tr><td colspan="4" class="px-3 py-4 text-center text-slate-400">Este cliente aún no registra compras.</td></tr>
+                    <tr><td colspan="4" class="px-3 py-8 text-center text-slate-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto mb-2 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.75h16.5m-16.5 0V6.108c0-.621.504-1.125 1.125-1.125h14.25c.621 0 1.125.504 1.125 1.125V9.75m-16.5 0v8.25c0 .621.504 1.125 1.125 1.125h14.25c.621 0 1.125-.504 1.125-1.125V9.75M9 12.75h6"/></svg>
+                        <p>Este cliente aún no registra compras.</p>
+                    </td></tr>
                 </c:if>
                 </tbody>
             </table>
@@ -170,13 +190,14 @@
 
 <!-- Modal: Nuevo cliente -->
 <div id="modal-nuevo-cliente" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-    <div class="bg-white w-full max-w-lg rounded-xl shadow-xl overflow-hidden">
+    <div class="tarjeta-modal transition-all duration-150 ease-out opacity-0 scale-95 bg-white w-full max-w-lg rounded-xl shadow-xl overflow-hidden">
         <div class="px-6 py-4 bg-slate-50 flex items-center justify-between">
             <h3 class="font-semibold">Nuevo cliente</h3>
-            <button type="button" onclick="document.getElementById('modal-nuevo-cliente').classList.add('hidden')"
+            <button type="button" onclick="cerrarModalConTransicion('modal-nuevo-cliente')"
                     class="text-slate-400 hover:text-slate-700">Cerrar</button>
         </div>
-        <form method="post" action="${pageContext.request.contextPath}/clientes" class="p-6 flex flex-col gap-4" id="form-nuevo-cliente">
+        <form method="post" action="${pageContext.request.contextPath}/clientes" class="p-6 flex flex-col gap-4" id="form-nuevo-cliente"
+              onsubmit="return iniciarEnvioConCarga(this, 'btn-guardar-cliente', 'Guardando...')">
             <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
             <input type="hidden" name="accion" value="crear">
             <div class="grid grid-cols-2 gap-4">
@@ -218,15 +239,37 @@
                 </div>
             </div>
             <div class="flex items-center justify-end gap-3 pt-2">
-                <button type="button" onclick="document.getElementById('modal-nuevo-cliente').classList.add('hidden')"
+                <button type="button" onclick="cerrarModalConTransicion('modal-nuevo-cliente')"
                         class="h-9 px-4 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm">Cancelar</button>
-                <button type="submit" class="h-9 px-5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">Guardar cliente</button>
+                <button type="submit" id="btn-guardar-cliente" class="h-9 px-5 btn-primario rounded-lg text-sm font-medium">Guardar cliente</button>
             </div>
         </form>
     </div>
 </div>
 
 <script>
+    /**
+     * Da una transición simple de entrada/salida (fade + scale) a los modales de esta vista,
+     * en vez de que aparezcan/desaparezcan de golpe al togglear la clase "hidden".
+     */
+    function abrirModalConTransicion(idModal) {
+        var modal = document.getElementById(idModal);
+        var tarjeta = modal.querySelector('.tarjeta-modal');
+        modal.classList.remove('hidden');
+        requestAnimationFrame(function () {
+            tarjeta.classList.remove('opacity-0', 'scale-95');
+            tarjeta.classList.add('opacity-100', 'scale-100');
+        });
+    }
+
+    function cerrarModalConTransicion(idModal) {
+        var modal = document.getElementById(idModal);
+        var tarjeta = modal.querySelector('.tarjeta-modal');
+        tarjeta.classList.remove('opacity-100', 'scale-100');
+        tarjeta.classList.add('opacity-0', 'scale-95');
+        setTimeout(function () { modal.classList.add('hidden'); }, 150);
+    }
+
     var CTX_PATH = '${pageContext.request.contextPath}';
 
     function buscarDocumentoCliente() {

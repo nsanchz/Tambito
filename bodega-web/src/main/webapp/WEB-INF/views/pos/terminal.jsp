@@ -106,7 +106,7 @@
                 Cliente paga en efectivo en dólares (USD)
             </label>
             <div id="detalle-pago-usd" class="hidden flex-col gap-2">
-                <p id="texto-tipo-cambio" class="text-xs text-emerald-700">Consultando tipo de cambio…</p>
+                <p id="texto-tipo-cambio" class="text-xs text-emerald-700 flex items-center gap-1"><span class="spinner-inline"></span>Consultando tipo de cambio…</p>
                 <div class="flex items-center justify-between text-sm font-semibold text-emerald-900">
                     <span>Equivalente a cobrar</span>
                     <span id="label-total-usd">$ 0.00</span>
@@ -124,8 +124,8 @@
             <span class="text-xs text-slate-500">Escanee para pagar <strong id="label-monto-qr-yape">S/ 0.00</strong> con Yape/Plin</span>
         </div>
 
-        <button type="button" onclick="confirmarVenta()"
-                class="h-11 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold text-sm">
+        <button type="button" id="btn-cobrar-venta" onclick="confirmarVenta()"
+                class="h-11 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold text-sm transition-colors">
             Cobrar venta (F12)
         </button>
     </div>
@@ -186,7 +186,7 @@
 
         carrito.forEach(function (item) {
             var fila = document.createElement('div');
-            fila.className = 'flex items-center justify-between gap-2 text-sm';
+            fila.className = 'flex items-center justify-between gap-2 text-sm opacity-0 transition-opacity duration-200';
             fila.innerHTML =
                 '<span class="flex-1 truncate">' + item.nombre + '</span>' +
                 '<div class="flex items-center gap-1">' +
@@ -196,6 +196,9 @@
                 '</div>' +
                 '<span class="w-16 text-right font-medium">S/ ' + (item.precio * item.cantidad).toFixed(2) + '</span>';
             contenedor.appendChild(fila);
+            requestAnimationFrame(function () {
+                fila.classList.remove('opacity-0');
+            });
         });
 
         recalcularTotales();
@@ -317,6 +320,11 @@
             return;
         }
 
+        var btnCobrar = document.getElementById('btn-cobrar-venta');
+        if (btnCobrar.disabled) {
+            return;
+        }
+
         var form = document.getElementById('form-venta');
         form.innerHTML = '';
 
@@ -354,6 +362,10 @@
             });
         }
 
+        btnCobrar.disabled = true;
+        btnCobrar.classList.add('opacity-80', 'cursor-wait');
+        btnCobrar.innerHTML = '<span class="spinner-inline"></span>Procesando...';
+
         form.submit();
     }
 
@@ -371,7 +383,8 @@
         }
 
         boton.disabled = true;
-        boton.textContent = '...';
+        boton.dataset.textoOriginal = boton.textContent;
+        boton.innerHTML = '<span class="spinner-inline"></span>';
 
         fetch('${pageContext.request.contextPath}/api/consulta-documento?numero=' + encodeURIComponent(numero) + '&tipo=' + tipo)
             .then(function (r) { return r.json(); })
@@ -396,7 +409,7 @@
             })
             .finally(function () {
                 boton.disabled = false;
-                boton.textContent = 'Buscar';
+                boton.textContent = boton.dataset.textoOriginal || 'Buscar';
             });
     }
 

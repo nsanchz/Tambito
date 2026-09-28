@@ -12,31 +12,31 @@
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="bg-white rounded-xl shadow-sm p-4 flex flex-col gap-1">
             <span class="text-xs text-slate-500 uppercase">Ventas de hoy</span>
-            <span class="text-2xl font-bold">S/ <c:out value="${resumen.ventasHoy}"/></span>
+            <span class="text-2xl font-bold">S/ <span class="kpi-contador" data-formato="moneda" data-valor="${resumen.ventasHoy}">0</span></span>
         </div>
         <div class="bg-white rounded-xl shadow-sm p-4 flex flex-col gap-1">
             <span class="text-xs text-slate-500 uppercase">Ventas del mes</span>
-            <span class="text-2xl font-bold">S/ <c:out value="${resumen.ventasMes}"/></span>
+            <span class="text-2xl font-bold">S/ <span class="kpi-contador" data-formato="moneda" data-valor="${resumen.ventasMes}">0</span></span>
         </div>
         <div class="bg-white rounded-xl shadow-sm p-4 flex flex-col gap-1">
             <span class="text-xs text-slate-500 uppercase">Productos activos</span>
-            <span class="text-2xl font-bold"><c:out value="${resumen.productosActivos}"/></span>
+            <span class="text-2xl font-bold"><span class="kpi-contador" data-valor="${resumen.productosActivos}">0</span></span>
         </div>
         <div class="bg-white rounded-xl shadow-sm p-4 flex flex-col gap-1">
             <span class="text-xs text-slate-500 uppercase">Stock bajo</span>
-            <span class="text-2xl font-bold text-amber-600"><c:out value="${resumen.productosStockBajo}"/></span>
+            <span class="text-2xl font-bold text-amber-600"><span class="kpi-contador ${resumen.productosStockBajo > 0 ? 'animate-pulse' : ''}" data-valor="${resumen.productosStockBajo}">0</span></span>
         </div>
         <div class="bg-white rounded-xl shadow-sm p-4 flex flex-col gap-1">
             <span class="text-xs text-slate-500 uppercase">Clientes activos</span>
-            <span class="text-2xl font-bold"><c:out value="${resumen.clientesActivos}"/></span>
+            <span class="text-2xl font-bold"><span class="kpi-contador" data-valor="${resumen.clientesActivos}">0</span></span>
         </div>
         <div class="bg-white rounded-xl shadow-sm p-4 flex flex-col gap-1">
             <span class="text-xs text-slate-500 uppercase">Ordenes de compra pendientes</span>
-            <span class="text-2xl font-bold"><c:out value="${resumen.ordenesCompraPendientes}"/></span>
+            <span class="text-2xl font-bold"><span class="kpi-contador" data-valor="${resumen.ordenesCompraPendientes}">0</span></span>
         </div>
         <div class="bg-white rounded-xl shadow-sm p-4 flex flex-col gap-1">
             <span class="text-xs text-slate-500 uppercase">Ventas anuladas (mes)</span>
-            <span class="text-2xl font-bold text-red-600"><c:out value="${resumen.ventasAnuladasMes}"/></span>
+            <span class="text-2xl font-bold text-red-600"><span class="kpi-contador" data-valor="${resumen.ventasAnuladasMes}">0</span></span>
         </div>
     </div>
 
@@ -106,5 +106,30 @@
         </div>
     </div>
 </div>
+
+<script>
+    (function () {
+        document.querySelectorAll('.kpi-contador').forEach(function (span) {
+            var valorFinal = parseFloat(span.getAttribute('data-valor')) || 0;
+            var esMoneda = span.getAttribute('data-formato') === 'moneda';
+            var duracion = 600;
+            var inicio = null;
+
+            function animar(marca) {
+                if (!inicio) inicio = marca;
+                var progreso = Math.min((marca - inicio) / duracion, 1);
+                var valorActual = valorFinal * progreso;
+                span.textContent = esMoneda ? valorActual.toFixed(2) : Math.round(valorActual);
+                if (progreso < 1) {
+                    requestAnimationFrame(animar);
+                } else {
+                    span.textContent = esMoneda ? valorFinal.toFixed(2) : valorFinal;
+                }
+            }
+
+            requestAnimationFrame(animar);
+        });
+    })();
+</script>
 
 <%@ include file="/WEB-INF/views/layout/pie.jspf" %>

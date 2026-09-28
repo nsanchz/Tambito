@@ -23,7 +23,8 @@
     </div>
 
     <form method="post" action="${pageContext.request.contextPath}/configuracion" enctype="multipart/form-data"
-          class="bg-white rounded-xl shadow-sm p-6 flex flex-col gap-4">
+          class="bg-white rounded-xl shadow-sm p-6 flex flex-col gap-4"
+          onsubmit="return iniciarEnvioConCarga(this, 'btn-guardar-configuracion', 'Guardando...')">
         <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
 
         <div class="flex flex-col gap-2 pb-2 border-b border-slate-100">
@@ -50,7 +51,7 @@
         </c:forEach>
 
         <div class="flex justify-end pt-2">
-            <button type="submit" class="h-10 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">
+            <button type="submit" id="btn-guardar-configuracion" class="h-10 px-6 btn-primario text-white rounded-lg text-sm font-medium">
                 Guardar configuración
             </button>
         </div>

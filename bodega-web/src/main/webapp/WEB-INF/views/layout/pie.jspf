@@ -46,11 +46,11 @@
                 '    <span class="text-xs text-slate-500">Quedan ' + alerta.stockActual + ' uds (mínimo ' + alerta.stockMinimo + ')</span>' +
                 '    <span class="text-xs text-slate-400">Proveedor: ' + alerta.proveedorNombre + '</span>' +
                 '  </div>' +
-                '  <span class="text-amber-500 text-lg leading-none">&#9888;</span>' +
+                '  <span class="text-amber-500 text-lg leading-none animate-pulse">&#9888;</span>' +
                 '</div>' +
                 '<div class="flex items-center justify-end gap-2 pt-1">' +
-                '  <button type="button" data-accion="ignorar" class="text-xs px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600">Ignorar</button>' +
-                '  <button type="button" data-accion="pedir" class="text-xs px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium">Pedir producto</button>' +
+                '  <button type="button" data-accion="ignorar" class="text-xs px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors">Ignorar</button>' +
+                '  <button type="button" data-accion="pedir" class="text-xs px-3 py-1.5 rounded-lg btn-primario font-medium">Pedir producto</button>' +
                 '</div>';
 
             tarjeta.querySelector('[data-accion="ignorar"]').addEventListener('click', function () {
@@ -172,6 +172,63 @@
         consultarAlertasInventario();
         setInterval(consultarAlertasInventario, 60000);
     })();
+
+    /**
+     * Helper compartido por TODA la app: deshabilita un botón y le muestra un spinner +
+     * texto de "procesando" mientras se envía un formulario, en vez de dejar al usuario sin
+     * ningún feedback hasta que la página recargue. Uso típico en el atributo del form:
+     *   <form onsubmit="return iniciarEnvioConCarga(this, 'btn-guardar', 'Guardando...')">
+     * (el botón de submit necesita id="btn-guardar" o el que se le pase). Siempre retorna
+     * true para que el submit continúe con normalidad.
+     */
+    function iniciarEnvioConCarga(form, idBoton, textoCarga) {
+        var boton = document.getElementById(idBoton);
+        if (!boton || boton.disabled) {
+            return true;
+        }
+        boton.dataset.textoOriginal = boton.innerHTML;
+        boton.disabled = true;
+        boton.classList.add('opacity-80', 'cursor-wait');
+        boton.innerHTML = '<span class="spinner-inline"></span>' + textoCarga;
+        return true;
+    }
+
+    /**
+     * Menú de acciones (⋮) reutilizable en CUALQUIER tabla de la app (nació en
+     * usuarios/lista.jsp, ahora es compartido). Cada botón "Más acciones" debe ir
+     * inmediatamente seguido de su <div class="menu-acciones hidden fixed z-50 ...">
+     * con los ítems del menú dentro. Se posiciona con `fixed` calculado desde el botón,
+     * así no lo corta el scroll horizontal de la tabla ni el borde inferior de la tarjeta.
+     */
+    function alternarMenuAcciones(boton) {
+        var menu = boton.nextElementSibling;
+        var estabaAbierto = !menu.classList.contains('hidden');
+        cerrarTodosLosMenus();
+        if (estabaAbierto) return;
+
+        var rectBoton = boton.getBoundingClientRect();
+        menu.classList.remove('hidden');
+        var rectMenu = menu.getBoundingClientRect();
+
+        var arriba = rectBoton.bottom + rectMenu.height > window.innerHeight - 8;
+        menu.style.top = (arriba ? rectBoton.top - rectMenu.height - 4 : rectBoton.bottom + 4) + 'px';
+
+        var izquierda = rectBoton.right - rectMenu.width;
+        if (izquierda < 8) izquierda = 8;
+        menu.style.left = izquierda + 'px';
+    }
+
+    function cerrarTodosLosMenus() {
+        document.querySelectorAll('.menu-acciones').forEach(function (m) { m.classList.add('hidden'); });
+    }
+
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.menu-acciones') && e.target.closest('button')?.getAttribute('title') !== 'Más acciones') {
+            cerrarTodosLosMenus();
+        }
+    });
+    window.addEventListener('scroll', cerrarTodosLosMenus, true);
+    window.addEventListener('resize', cerrarTodosLosMenus);
 </script>
 </body>
 </html>

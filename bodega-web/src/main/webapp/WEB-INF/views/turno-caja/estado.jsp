@@ -43,7 +43,8 @@
                     </div>
                 </div>
 
-                <form method="post" action="${pageContext.request.contextPath}/turno-caja" class="flex flex-col gap-3 bg-slate-50 rounded-lg p-4">
+                <form method="post" action="${pageContext.request.contextPath}/turno-caja" class="flex flex-col gap-3 bg-slate-50 rounded-lg p-4"
+                      onsubmit="return iniciarEnvioConCarga(this, 'btn-cerrar-turno', 'Cerrando turno...')">
                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                     <input type="hidden" name="accion" value="cerrar">
                     <input type="hidden" name="turnoId" value="${turnoAbierto.id}">
@@ -54,7 +55,7 @@
                         El sistema calculará automáticamente el efectivo esperado (fondo inicial + ventas en efectivo
                         de este turno) y mostrará la diferencia (sobrante o faltante) al confirmar.
                     </p>
-                    <button type="submit" class="self-start h-10 px-6 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium">
+                    <button type="submit" id="btn-cerrar-turno" class="self-start h-10 px-6 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors">
                         Cerrar turno y hacer arqueo
                     </button>
                 </form>
@@ -64,13 +65,14 @@
             <!-- Sin turno abierto: formulario de apertura -->
             <div class="bg-white rounded-xl shadow-sm p-6 flex flex-col gap-4">
                 <h3 class="font-semibold">Abrir nuevo turno de caja</h3>
-                <form method="post" action="${pageContext.request.contextPath}/turno-caja" class="flex flex-col gap-3 max-w-xs">
+                <form method="post" action="${pageContext.request.contextPath}/turno-caja" class="flex flex-col gap-3 max-w-xs"
+                      onsubmit="return iniciarEnvioConCarga(this, 'btn-abrir-turno', 'Abriendo turno...')">
                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                     <input type="hidden" name="accion" value="abrir">
                     <label class="text-sm font-medium">Monto inicial de caja (S/) *</label>
                     <input type="number" step="0.01" min="0" name="montoInicial" required value="0.00"
                            class="h-10 px-3 border border-slate-300 rounded-lg text-sm">
-                    <button type="submit" class="h-10 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">
+                    <button type="submit" id="btn-abrir-turno" class="h-10 px-6 btn-primario text-white rounded-lg text-sm font-medium">
                         Abrir turno
                     </button>
                 </form>
@@ -127,7 +129,7 @@
 
     <!-- Detalle de un turno seleccionado: ventas realizadas durante ese turno -->
     <c:if test="${not empty turnoDetalle}">
-        <div class="bg-white rounded-xl shadow-sm p-4 flex flex-col gap-3">
+        <div class="bg-white rounded-xl shadow-sm p-4 flex flex-col gap-3 animate-[fadeIn_0.2s]">
             <div class="flex items-center justify-between">
                 <h3 class="font-semibold text-sm">
                     Detalle del turno de <c:out value="${turnoDetalle.usuarioNombre}"/>

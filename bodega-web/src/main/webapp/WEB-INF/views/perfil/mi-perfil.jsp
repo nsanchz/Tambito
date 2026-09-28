@@ -41,7 +41,8 @@
                 <p class="text-xs text-slate-400">Solo un administrador puede corregir estos datos, desde el módulo de Usuarios.</p>
             </c:when>
             <c:otherwise>
-                <form method="post" action="${pageContext.request.contextPath}/perfil" class="grid grid-cols-2 gap-4">
+                <form method="post" action="${pageContext.request.contextPath}/perfil" class="grid grid-cols-2 gap-4"
+                      onsubmit="return iniciarEnvioConCarga(this, 'btn-guardar-datos', 'Guardando...')">
                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                     <input type="hidden" name="accion" value="actualizarDatos">
                     <div class="flex flex-col gap-1">
@@ -61,7 +62,7 @@
                         <input type="tel" name="telefono" value="${usuario.telefono}" class="h-9 px-3 border border-slate-300 rounded-lg text-sm">
                     </div>
                     <div class="col-span-2 flex justify-end">
-                        <button type="submit" class="h-9 px-5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">Guardar datos</button>
+                        <button type="submit" id="btn-guardar-datos" class="h-9 px-5 btn-primario text-white rounded-lg text-sm font-medium">Guardar datos</button>
                     </div>
                 </form>
             </c:otherwise>
@@ -79,7 +80,8 @@
                 </p>
             </c:when>
             <c:otherwise>
-                <form method="post" action="${pageContext.request.contextPath}/perfil" class="flex flex-col gap-4">
+                <form method="post" action="${pageContext.request.contextPath}/perfil" class="flex flex-col gap-4"
+                      onsubmit="return iniciarEnvioConCarga(this, 'btn-cambiar-password', 'Guardando...')">
                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                     <input type="hidden" name="accion" value="cambiarPassword">
                     <div class="flex flex-col gap-1">
@@ -128,7 +130,7 @@
                         </div>
                     </div>
                     <div class="flex justify-end">
-                        <button type="submit" class="h-9 px-5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-sm font-medium">Cambiar contraseña</button>
+                        <button type="submit" id="btn-cambiar-password" class="h-9 px-5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-sm font-medium transition-colors">Cambiar contraseña</button>
                     </div>
                 </form>
                 <script>

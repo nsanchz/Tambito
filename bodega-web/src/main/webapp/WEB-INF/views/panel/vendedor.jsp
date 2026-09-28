@@ -9,19 +9,20 @@
             <p class="text-sm text-slate-500">Turno de mostrador activo. Resumen de tus ventas de hoy.</p>
         </div>
         <a href="${pageContext.request.contextPath}/pos"
-           class="h-11 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold flex items-center">
+           class="group h-11 px-6 btn-primario text-white rounded-lg font-semibold flex items-center gap-2">
             Ir al Punto de Venta (F12)
+            <span class="inline-block transition-transform group-hover:translate-x-1">&rarr;</span>
         </a>
     </div>
 
     <div class="grid grid-cols-2 gap-4">
         <div class="bg-white rounded-xl shadow-sm p-4 flex flex-col gap-1">
             <span class="text-xs text-slate-500 uppercase">Total vendido hoy</span>
-            <span class="text-2xl font-bold">S/ <c:out value="${resumen.ventasHoy}"/></span>
+            <span class="text-2xl font-bold">S/ <span class="kpi-contador" data-formato="moneda" data-valor="${resumen.ventasHoy}">0</span></span>
         </div>
         <div class="bg-white rounded-xl shadow-sm p-4 flex flex-col gap-1">
             <span class="text-xs text-slate-500 uppercase">Comprobantes emitidos hoy</span>
-            <span class="text-2xl font-bold"><c:out value="${resumen.cantidadVentasHoy}"/></span>
+            <span class="text-2xl font-bold"><span class="kpi-contador" data-valor="${resumen.cantidadVentasHoy}">0</span></span>
         </div>
     </div>
 
@@ -59,5 +60,30 @@
         </table>
     </div>
 </div>
+
+<script>
+    (function () {
+        document.querySelectorAll('.kpi-contador').forEach(function (span) {
+            var valorFinal = parseFloat(span.getAttribute('data-valor')) || 0;
+            var esMoneda = span.getAttribute('data-formato') === 'moneda';
+            var duracion = 600;
+            var inicio = null;
+
+            function animar(marca) {
+                if (!inicio) inicio = marca;
+                var progreso = Math.min((marca - inicio) / duracion, 1);
+                var valorActual = valorFinal * progreso;
+                span.textContent = esMoneda ? valorActual.toFixed(2) : Math.round(valorActual);
+                if (progreso < 1) {
+                    requestAnimationFrame(animar);
+                } else {
+                    span.textContent = esMoneda ? valorFinal.toFixed(2) : valorFinal;
+                }
+            }
+
+            requestAnimationFrame(animar);
+        });
+    })();
+</script>
 
 <%@ include file="/WEB-INF/views/layout/pie.jspf" %>

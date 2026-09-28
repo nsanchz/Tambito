@@ -23,8 +23,8 @@
             <h2 class="text-2xl font-bold">Gestión de Proveedores</h2>
             <p class="text-sm text-slate-500">Directorio de proveedores asociados a los productos del catálogo.</p>
         </div>
-        <button type="button" onclick="document.getElementById('modal-nuevo-proveedor').classList.remove('hidden')"
-                class="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">
+        <button type="button" onclick="abrirModalConTransicion('modal-nuevo-proveedor')"
+                class="h-10 px-4 btn-primario rounded-lg text-sm font-medium">
             + Nuevo proveedor
         </button>
     </div>
@@ -69,7 +69,9 @@
                                 <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                 <input type="hidden" name="accion" value="${prov.estado == 'ACTIVO' ? 'desactivar' : 'reactivar'}">
                                 <input type="hidden" name="proveedorId" value="${prov.id}">
-                                <button type="submit" class="text-slate-500 hover:text-red-600">
+                                <button type="submit" title="${prov.estado == 'ACTIVO' ? 'Desactivar proveedor' : 'Reactivar proveedor'}"
+                                        class="inline-flex items-center gap-1.5 transition-colors ${prov.estado == 'ACTIVO' ? 'text-slate-500 hover:text-red-600' : 'text-slate-500 hover:text-emerald-600'}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5.636 5.636a9 9 0 1012.728 0M12 3v9"/></svg>
                                     <c:out value="${prov.estado == 'ACTIVO' ? 'Desactivar' : 'Reactivar'}"/>
                                 </button>
                             </form>
@@ -77,7 +79,10 @@
                     </tr>
                 </c:forEach>
                 <c:if test="${empty proveedores}">
-                    <tr><td colspan="7" class="px-4 py-6 text-center text-slate-400">No se encontraron proveedores registrados.</td></tr>
+                    <tr><td colspan="7" class="px-4 py-10 text-center text-slate-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-9 w-9 mx-auto mb-2 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.75h16.5m-16.5 0V6.108c0-.621.504-1.125 1.125-1.125h14.25c.621 0 1.125.504 1.125 1.125V9.75m-16.5 0v8.25c0 .621.504 1.125 1.125 1.125h14.25c.621 0 1.125-.504 1.125-1.125V9.75M9 12.75h6"/></svg>
+                        <p>No se encontraron proveedores registrados.</p>
+                    </td></tr>
                 </c:if>
                 </tbody>
             </table>
@@ -86,13 +91,14 @@
 </div>
 
 <div id="modal-nuevo-proveedor" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-    <div class="bg-white w-full max-w-lg rounded-xl shadow-xl overflow-hidden">
+    <div class="tarjeta-modal transition-all duration-150 ease-out opacity-0 scale-95 bg-white w-full max-w-lg rounded-xl shadow-xl overflow-hidden">
         <div class="px-6 py-4 bg-slate-50 flex items-center justify-between">
             <h3 class="font-semibold">Nuevo proveedor</h3>
-            <button type="button" onclick="document.getElementById('modal-nuevo-proveedor').classList.add('hidden')"
+            <button type="button" onclick="cerrarModalConTransicion('modal-nuevo-proveedor')"
                     class="text-slate-400 hover:text-slate-700">Cerrar</button>
         </div>
-        <form method="post" action="${pageContext.request.contextPath}/proveedores" class="p-6 flex flex-col gap-4">
+        <form method="post" action="${pageContext.request.contextPath}/proveedores" class="p-6 flex flex-col gap-4"
+              onsubmit="return iniciarEnvioConCarga(this, 'btn-guardar-proveedor', 'Guardando...')">
             <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
             <input type="hidden" name="accion" value="crear">
             <div class="grid grid-cols-2 gap-4">
@@ -122,12 +128,36 @@
                 </div>
             </div>
             <div class="flex items-center justify-end gap-3 pt-2">
-                <button type="button" onclick="document.getElementById('modal-nuevo-proveedor').classList.add('hidden')"
+                <button type="button" onclick="cerrarModalConTransicion('modal-nuevo-proveedor')"
                         class="h-9 px-4 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm">Cancelar</button>
-                <button type="submit" class="h-9 px-5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">Guardar proveedor</button>
+                <button type="submit" id="btn-guardar-proveedor" class="h-9 px-5 btn-primario rounded-lg text-sm font-medium">Guardar proveedor</button>
             </div>
         </form>
     </div>
 </div>
+
+<script>
+    /**
+     * Da una transición simple de entrada/salida (fade + scale) a los modales de esta vista,
+     * en vez de que aparezcan/desaparezcan de golpe al togglear la clase "hidden".
+     */
+    function abrirModalConTransicion(idModal) {
+        var modal = document.getElementById(idModal);
+        var tarjeta = modal.querySelector('.tarjeta-modal');
+        modal.classList.remove('hidden');
+        requestAnimationFrame(function () {
+            tarjeta.classList.remove('opacity-0', 'scale-95');
+            tarjeta.classList.add('opacity-100', 'scale-100');
+        });
+    }
+
+    function cerrarModalConTransicion(idModal) {
+        var modal = document.getElementById(idModal);
+        var tarjeta = modal.querySelector('.tarjeta-modal');
+        tarjeta.classList.remove('opacity-100', 'scale-100');
+        tarjeta.classList.add('opacity-0', 'scale-95');
+        setTimeout(function () { modal.classList.add('hidden'); }, 150);
+    }
+</script>
 
 <%@ include file="/WEB-INF/views/layout/pie.jspf" %>

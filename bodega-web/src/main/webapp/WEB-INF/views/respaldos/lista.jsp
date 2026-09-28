@@ -23,7 +23,8 @@
             <p class="text-sm text-slate-500">Historial de respaldos automáticos (diarios) y manuales de bodega_db.</p>
         </div>
         <form method="post" action="${pageContext.request.contextPath}/respaldos"
-              class="bg-white rounded-xl shadow-sm p-3 flex flex-col gap-2 w-full max-w-md">
+              class="bg-white rounded-xl shadow-sm p-3 flex flex-col gap-2 w-full max-w-md"
+              onsubmit="return iniciarEnvioConCarga(this, 'btn-generar-respaldo', 'Generando respaldo...')">
             <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
             <label class="text-xs font-medium text-slate-600">Ruta de destino en el servidor (opcional)</label>
             <input type="text" name="rutaDestino" placeholder="${rutaPorDefecto}"
@@ -33,7 +34,7 @@
                 Debe ser una ruta accesible por el servidor (no por su computadora), ej. un disco
                 externo o carpeta compartida montada en el servidor.
             </p>
-            <button type="submit" class="self-end h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">
+            <button type="submit" id="btn-generar-respaldo" class="self-end h-10 px-4 btn-primario text-white rounded-lg text-sm font-medium">
                 Generar respaldo ahora
             </button>
         </form>
@@ -67,11 +68,11 @@
                         </td>
                         <td class="px-4 py-3 text-slate-500"><c:out value="${not empty r.usuarioNombre ? r.usuarioNombre : 'Automático (scheduler)'}"/></td>
                         <td class="px-4 py-3 text-right">
-                            <button type="button" onclick="document.getElementById('detalle-respaldo-${st.index}').classList.toggle('hidden')"
+                            <button type="button" onclick="alternarDetalleRespaldo('detalle-respaldo-${st.index}')"
                                     class="text-blue-600 hover:underline">Ver detalle</button>
                         </td>
                     </tr>
-                    <tr id="detalle-respaldo-${st.index}" class="hidden bg-slate-50">
+                    <tr id="detalle-respaldo-${st.index}" class="hidden bg-slate-50 transition-opacity duration-200">
                         <td colspan="5" class="px-4 py-3">
                             <div class="grid grid-cols-2 gap-2 text-xs text-slate-600 max-w-2xl">
                                 <div><span class="text-slate-400">Fin:</span> <c:out value="${r.fechaFin}"/></div>
@@ -94,5 +95,20 @@
         </div>
     </div>
 </div>
+
+<script>
+    function alternarDetalleRespaldo(id) {
+        var fila = document.getElementById(id);
+        if (fila.classList.contains('hidden')) {
+            fila.classList.remove('hidden');
+            fila.classList.add('opacity-0');
+            requestAnimationFrame(function () {
+                fila.classList.remove('opacity-0');
+            });
+        } else {
+            fila.classList.add('hidden');
+        }
+    }
+</script>
 
 <%@ include file="/WEB-INF/views/layout/pie.jspf" %>

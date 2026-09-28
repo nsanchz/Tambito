@@ -23,8 +23,8 @@
             <h2 class="text-2xl font-bold">Órdenes de Compra a Proveedores</h2>
             <p class="text-sm text-slate-500">Solicitud y recepción de mercadería; actualiza el stock e inserta movimientos en el Kárdex.</p>
         </div>
-        <button type="button" onclick="document.getElementById('modal-nueva-orden').classList.remove('hidden')"
-                class="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">
+        <button type="button" onclick="abrirModalConTransicion('modal-nueva-orden')"
+                class="h-10 px-4 btn-primario rounded-lg text-sm font-medium">
             + Nueva orden de compra
         </button>
     </div>
@@ -65,41 +65,66 @@
                         <td class="px-4 py-3"><c:out value="${o.usuarioNombre}"/></td>
                         <td class="px-4 py-3 text-slate-500"><c:out value="${o.fechaCreacion}"/></td>
                         <td class="px-4 py-3 text-center">
+                            <!-- Paleta de estado reutilizada del resto de la app: emerald = OK/completado (igual
+                                 que ventas/historial.jsp y usuarios ACTIVO), amber = advertencia/parcial, indigo =
+                                 aprobado (igual que rol ADMINISTRADOR en usuarios/lista.jsp), red = rechazado
+                                 (igual que ANULADA en ventas), slate = cancelado/inactivo, sky = pendiente/informativo. -->
                             <span class="px-2 py-0.5 rounded-full text-xs font-medium
                                 ${o.estado == 'RECIBIDA_COMPLETA' ? 'bg-emerald-100 text-emerald-700' :
                                   o.estado == 'RECIBIDA_PARCIAL' ? 'bg-amber-100 text-amber-700' :
                                   o.estado == 'APROBADA' ? 'bg-indigo-100 text-indigo-700' :
                                   o.estado == 'RECHAZADA' ? 'bg-red-100 text-red-700' :
-                                  o.estado == 'CANCELADA' ? 'bg-slate-100 text-slate-500' : 'bg-sky-100 text-sky-700'}">
+                                  o.estado == 'CANCELADA' ? 'bg-slate-100 text-slate-500' :
+                                  o.estado == 'PENDIENTE' ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-500'}">
                                 <c:out value="${o.estado}"/>
                             </span>
                         </td>
                         <td class="px-4 py-3 text-right">
-                            <div class="flex items-center justify-end gap-2">
+                            <button type="button" onclick="alternarMenuAcciones(this)"
+                                    class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                                    title="Más acciones">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                                    <circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/>
+                                </svg>
+                            </button>
+                            <div class="menu-acciones hidden fixed z-50 w-56 bg-white rounded-xl shadow-lg border border-slate-100 py-1.5 text-sm">
+                                <a href="${pageContext.request.contextPath}/ordenes-compra?ver=${o.id}"
+                                   class="w-full text-left px-3 py-2 flex items-center gap-2.5 text-slate-600 hover:bg-slate-50">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    Ver / Recibir
+                                </a>
                                 <c:if test="${sessionScope.usuarioRol == 'ADMINISTRADOR' and o.estado == 'PENDIENTE'}">
-                                    <form method="post" action="${pageContext.request.contextPath}/ordenes-compra" class="inline">
+                                    <div class="my-1 border-t border-slate-100"></div>
+                                    <form method="post" action="${pageContext.request.contextPath}/ordenes-compra">
                                         <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                         <input type="hidden" name="accion" value="aprobar">
                                         <input type="hidden" name="ordenId" value="${o.id}">
-                                        <button type="submit" class="text-emerald-600 hover:underline">Aprobar</button>
+                                        <button type="submit" class="w-full text-left px-3 py-2 flex items-center gap-2.5 text-emerald-600 hover:bg-emerald-50">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                                            Aprobar
+                                        </button>
                                     </form>
-                                    <form method="post" action="${pageContext.request.contextPath}/ordenes-compra" class="inline"
+                                    <form method="post" action="${pageContext.request.contextPath}/ordenes-compra"
                                           onsubmit="document.getElementById('motivo-rechazo-${o.id}').value = prompt('Motivo del rechazo (opcional):') || ''; return true;">
                                         <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                         <input type="hidden" name="accion" value="rechazar">
                                         <input type="hidden" name="ordenId" value="${o.id}">
                                         <input type="hidden" id="motivo-rechazo-${o.id}" name="motivo" value="">
-                                        <button type="submit" class="text-red-600 hover:underline">Rechazar</button>
+                                        <button type="submit" class="w-full text-left px-3 py-2 flex items-center gap-2.5 text-red-600 hover:bg-red-50">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            Rechazar
+                                        </button>
                                     </form>
                                 </c:if>
-                                <a href="${pageContext.request.contextPath}/ordenes-compra?ver=${o.id}"
-                                   class="text-blue-600 hover:underline">Ver / Recibir</a>
                             </div>
                         </td>
                     </tr>
                 </c:forEach>
                 <c:if test="${empty ordenes}">
-                    <tr><td colspan="6" class="px-4 py-6 text-center text-slate-400">No hay órdenes de compra registradas.</td></tr>
+                    <tr><td colspan="6" class="px-4 py-10 text-center text-slate-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-9 w-9 mx-auto mb-2 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.75h16.5m-16.5 0V6.108c0-.621.504-1.125 1.125-1.125h14.25c.621 0 1.125.504 1.125 1.125V9.75m-16.5 0v8.25c0 .621.504 1.125 1.125 1.125h14.25c.621 0 1.125-.504 1.125-1.125V9.75M9 12.75h6"/></svg>
+                        <p>No hay órdenes de compra registradas.</p>
+                    </td></tr>
                 </c:if>
                 </tbody>
             </table>
@@ -176,13 +201,14 @@
 
 <!-- Modal: Nueva orden de compra -->
 <div id="modal-nueva-orden" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-    <div class="bg-white w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl shadow-xl overflow-hidden">
+    <div class="tarjeta-modal transition-all duration-150 ease-out opacity-0 scale-95 bg-white w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl shadow-xl overflow-hidden">
         <div class="px-6 py-4 bg-slate-50 flex items-center justify-between">
             <h3 class="font-semibold">Nueva orden de compra</h3>
-            <button type="button" onclick="document.getElementById('modal-nueva-orden').classList.add('hidden')"
+            <button type="button" onclick="cerrarModalConTransicion('modal-nueva-orden')"
                     class="text-slate-400 hover:text-slate-700">Cerrar</button>
         </div>
-        <form method="post" action="${pageContext.request.contextPath}/ordenes-compra" class="p-6 flex flex-col gap-4">
+        <form method="post" action="${pageContext.request.contextPath}/ordenes-compra" class="p-6 flex flex-col gap-4"
+              onsubmit="return iniciarEnvioConCarga(this, 'btn-guardar-orden', 'Guardando...')">
             <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
             <input type="hidden" name="accion" value="crear">
             <div class="flex flex-col gap-1">
@@ -206,9 +232,9 @@
             </div>
 
             <div class="flex items-center justify-end gap-3 pt-2">
-                <button type="button" onclick="document.getElementById('modal-nueva-orden').classList.add('hidden')"
+                <button type="button" onclick="cerrarModalConTransicion('modal-nueva-orden')"
                         class="h-9 px-4 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm">Cancelar</button>
-                <button type="submit" class="h-9 px-5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">Registrar orden</button>
+                <button type="submit" id="btn-guardar-orden" class="h-9 px-5 btn-primario rounded-lg text-sm font-medium">Registrar orden</button>
             </div>
         </form>
     </div>
@@ -235,10 +261,10 @@
             '<select name="lineaProductoId" required class="col-span-5 h-9 px-2 border border-slate-300 rounded-lg text-sm">' +
             '<option value="">Seleccione producto</option>' + opcionesProducto +
             '</select>' +
-            '<input type="number" name="lineaCantidad" min="1" required placeholder="Cantidad" value="' + (cantidadPreseleccionada || '') + '" class="col-span-2 h-9 px-2 border border-slate-300 rounded-lg text-sm">' +
-            '<button type="button" onclick="aplicarSugerenciaEnFila(this)" title="Sugerir cantidad según velocidad de venta (Kárdex)" class="col-span-2 h-9 px-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs">Sugerir</button>' +
-            '<input type="number" step="0.01" name="lineaPrecioUnitario" min="0" required placeholder="Precio unit." class="col-span-2 h-9 px-2 border border-slate-300 rounded-lg text-sm">' +
-            '<button type="button" onclick="this.parentElement.remove()" class="col-span-1 text-red-500 hover:text-red-700 text-sm">Quitar</button>';
+            '<input type="number" name="lineaCantidad" min="1" required placeholder="Cantidad" value="' + (cantidadPreseleccionada || '') + '" class="col-span-2 h-9 px-2 border border-slate-300 rounded-lg text-sm min-w-0">' +
+            '<button type="button" onclick="aplicarSugerenciaEnFila(this)" title="Sugerir cantidad según velocidad de venta (Kárdex)" class="col-span-2 h-9 px-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs shrink-0">Sugerir</button>' +
+            '<input type="number" step="0.01" name="lineaPrecioUnitario" min="0" required placeholder="Precio unit." class="col-span-2 h-9 px-2 border border-slate-300 rounded-lg text-sm min-w-0">' +
+            '<button type="button" onclick="this.parentElement.remove()" class="col-span-1 text-red-500 hover:text-red-700 text-sm shrink-0">Quitar</button>';
 
         contenedor.appendChild(fila);
     }
@@ -254,25 +280,52 @@
         }
 
         var base = document.querySelector('meta[name="context-path"]').getAttribute('content');
-        botonSugerir.textContent = '...';
+        var textoOriginal = botonSugerir.innerHTML;
+        botonSugerir.disabled = true;
+        botonSugerir.innerHTML = '<span class="spinner-inline"></span>Sugerir';
         fetch(base + '/api/sugerencia-reposicion?productoId=' + selectProducto.value)
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 inputCantidad.value = data.cantidadSugerida;
-                botonSugerir.textContent = 'Sugerir';
             })
-            .catch(function () { botonSugerir.textContent = 'Sugerir'; });
+            .catch(function () { /* si falla, simplemente no se autocompleta la cantidad */ })
+            .finally(function () {
+                botonSugerir.disabled = false;
+                botonSugerir.innerHTML = textoOriginal;
+            });
     }
 
     <c:if test="${abrirModalNuevaOrden}">
     document.addEventListener('DOMContentLoaded', function () {
-        document.getElementById('modal-nueva-orden').classList.remove('hidden');
+        abrirModalConTransicion('modal-nueva-orden');
         agregarLinea('${productoSugeridoId}', ${cantidadSugeridaInicial});
     });
     </c:if>
 
     if (document.getElementById('contenedor-lineas') && document.getElementById('contenedor-lineas').children.length === 0) {
         agregarLinea();
+    }
+
+    /**
+     * Da una transición simple de entrada/salida (fade + scale) a los modales de esta vista,
+     * en vez de que aparezcan/desaparezcan de golpe al togglear la clase "hidden".
+     */
+    function abrirModalConTransicion(idModal) {
+        var modal = document.getElementById(idModal);
+        var tarjeta = modal.querySelector('.tarjeta-modal');
+        modal.classList.remove('hidden');
+        requestAnimationFrame(function () {
+            tarjeta.classList.remove('opacity-0', 'scale-95');
+            tarjeta.classList.add('opacity-100', 'scale-100');
+        });
+    }
+
+    function cerrarModalConTransicion(idModal) {
+        var modal = document.getElementById(idModal);
+        var tarjeta = modal.querySelector('.tarjeta-modal');
+        tarjeta.classList.remove('opacity-100', 'scale-100');
+        tarjeta.classList.add('opacity-0', 'scale-95');
+        setTimeout(function () { modal.classList.add('hidden'); }, 150);
     }
 </script>
 

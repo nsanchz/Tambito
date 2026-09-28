@@ -360,37 +360,8 @@
 </div>
 
 <script>
-    // Menú de acciones (⋮) por fila: se posiciona con `fixed` calculado desde el botón, así
-    // no lo corta el scroll horizontal de la tabla ni el borde inferior de la tarjeta.
-    function alternarMenuAcciones(boton) {
-        var menu = boton.nextElementSibling;
-        var estabaAbierto = !menu.classList.contains('hidden');
-        cerrarTodosLosMenus();
-        if (estabaAbierto) return;
-
-        var rectBoton = boton.getBoundingClientRect();
-        menu.classList.remove('hidden');
-        var rectMenu = menu.getBoundingClientRect();
-
-        var arriba = rectBoton.bottom + rectMenu.height > window.innerHeight - 8;
-        menu.style.top = (arriba ? rectBoton.top - rectMenu.height - 4 : rectBoton.bottom + 4) + 'px';
-
-        var izquierda = rectBoton.right - rectMenu.width;
-        if (izquierda < 8) izquierda = 8;
-        menu.style.left = izquierda + 'px';
-    }
-
-    function cerrarTodosLosMenus() {
-        document.querySelectorAll('.menu-acciones').forEach(function (m) { m.classList.add('hidden'); });
-    }
-
-    document.addEventListener('click', function (e) {
-        if (!e.target.closest('.menu-acciones') && e.target.closest('button')?.getAttribute('title') !== 'Más acciones') {
-            cerrarTodosLosMenus();
-        }
-    });
-    window.addEventListener('scroll', cerrarTodosLosMenus, true);
-    window.addEventListener('resize', cerrarTodosLosMenus);
+    // El menú de acciones (⋮) — alternarMenuAcciones/cerrarTodosLosMenus — ahora vive como
+    // función compartida en layout/pie.jspf, reutilizable desde cualquier vista con tablas.
 
     function alternarVisibilidadPassword(idCampo, boton) {
         var campo = document.getElementById(idCampo);
