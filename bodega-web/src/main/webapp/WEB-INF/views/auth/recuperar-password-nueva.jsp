@@ -77,12 +77,9 @@
 
 <div class="relative min-h-screen flex items-center justify-center px-6 py-12">
     <div class="max-w-sm w-full bg-gradient-to-br from-slate-900/90 to-black/90 backdrop-blur-sm border border-white/10 rounded-2xl shadow-2xl p-8 sm:p-10">
-        <div class="flex flex-col items-center gap-2 mb-8">
+        <div class="flex flex-col items-center mb-8">
             <img src="${pageContext.request.contextPath}/imagen?tipo=logo" alt="Logotipo de la tienda"
                  class="h-14" onerror="this.style.display='none'">
-            <span class="text-slate-400 text-sm font-medium tracking-wide uppercase">
-                <c:out value="${nombreEmpresa}" default="Bodega TAMBITO"/>
-            </span>
         </div>
 
         <h1 class="titulo-cursiva text-4xl text-white mb-3 text-center">Nueva contraseña</h1>
