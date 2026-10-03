@@ -41,28 +41,32 @@ public class PasswordResetService {
     }
 
     /**
-     * Inicia el flujo: si {@code login} corresponde a una cuenta activa con correo registrado,
-     * genera un código de 6 dígitos, lo guarda hasheado con vencimiento, y lo envía por correo.
+     * Inicia el flujo: valida que {@code login} corresponda a una cuenta activa con correo
+     * registrado, genera un código de 6 dígitos, lo guarda hasheado con vencimiento, y lo
+     * envía por correo. A diferencia de un flujo típico "olvidé mi contraseña", esta variante
+     * SÍ confirma explícitamente si la cuenta existe (devuelve vacío si no) y muestra a qué
+     * correo se envió el código — decisión explícita del negocio, priorizando que el usuario
+     * confirme de inmediato si escribió bien su usuario, por sobre ocultar qué cuentas existen.
      * Cualquier fallo de envío de correo se registra en el log pero nunca se propaga — el
      * flujo de recuperación nunca debe reventar porque el SMTP esté caído en ese momento.
      *
      * @param login nombre de usuario o correo ingresado en el formulario
-     * @return el id del usuario si la cuenta existe, está activa y tiene correo registrado
-     *         (se le envió el código); {@link #USUARIO_INEXISTENTE} en cualquier otro caso
+     * @return el usuario (con el código ya enviado) si la cuenta existe, está activa y tiene
+     *         correo registrado; {@link Optional#empty()} en cualquier otro caso
      * @throws SQLException si falla la base de datos
      */
-    public int solicitarCodigo(String login) throws SQLException {
+    public Optional<Usuario> solicitarCodigo(String login) throws SQLException {
         if (login == null || login.isBlank()) {
-            return USUARIO_INEXISTENTE;
+            return Optional.empty();
         }
         Optional<Usuario> usuarioOpt = usuarioDAO.buscarPorUsuarioOCorreo(login.trim());
         if (usuarioOpt.isEmpty()) {
-            return USUARIO_INEXISTENTE;
+            return Optional.empty();
         }
         Usuario usuario = usuarioOpt.get();
         if (usuario.getEstado() != EstadoCuenta.ACTIVO
                 || usuario.getCorreo() == null || usuario.getCorreo().isBlank()) {
-            return USUARIO_INEXISTENTE;
+            return Optional.empty();
         }
 
         String codigo = generarCodigoNumerico();
@@ -75,7 +79,33 @@ public class PasswordResetService {
         } catch (Exception correoFallido) {
             System.err.println("No se pudo enviar el código de recuperación de contraseña: " + correoFallido.getMessage());
         }
-        return usuario.getId();
+        return Optional.of(usuario);
+    }
+
+    /**
+     * Enmascara un correo para mostrarlo en pantalla sin exponerlo por completo (ej.
+     * {@code "neyder.sanchez@gmail.com"} → {@code "n************z@gmail.com"}), usado por la
+     * pantalla de verificación para confirmar a dónde se envió el código.
+     *
+     * @param correo correo completo
+     * @return el correo con la parte local enmascarada (primer y último carácter visibles) y
+     *         el dominio sin modificar; el propio {@code correo} tal cual si no tiene el
+     *         formato esperado
+     */
+    public static String enmascararCorreo(String correo) {
+        if (correo == null) {
+            return "";
+        }
+        int arroba = correo.indexOf('@');
+        if (arroba <= 1) {
+            return correo;
+        }
+        String local = correo.substring(0, arroba);
+        String dominio = correo.substring(arroba);
+        if (local.length() <= 2) {
+            return local.charAt(0) + "*".repeat(local.length() - 1) + dominio;
+        }
+        return local.charAt(0) + "*".repeat(local.length() - 2) + local.charAt(local.length() - 1) + dominio;
     }
 
     /**

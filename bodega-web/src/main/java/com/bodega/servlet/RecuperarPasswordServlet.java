@@ -1,5 +1,6 @@
 package com.bodega.servlet;
 
+import com.bodega.model.Usuario;
 import com.bodega.service.PasswordResetService;
 import com.bodega.util.Constantes;
 import com.bodega.util.LoginRateLimiter;
@@ -13,6 +14,7 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 /**
  * Primer paso del restablecimiento autoservicio de contraseña: pide el usuario o correo de la
@@ -39,12 +41,21 @@ public class RecuperarPasswordServlet extends HttpServlet {
         }
 
         try {
-            int usuarioId = passwordResetService.solicitarCodigo(req.getParameter("login"));
+            Optional<Usuario> usuarioOpt = passwordResetService.solicitarCodigo(req.getParameter("login"));
+            if (usuarioOpt.isEmpty()) {
+                req.setAttribute(Constantes.ATTR_ERROR,
+                        "No encontramos una cuenta activa con correo registrado para ese usuario o correo.");
+                req.getRequestDispatcher("/WEB-INF/views/auth/recuperar-password.jsp").forward(req, resp);
+                return;
+            }
+            Usuario usuario = usuarioOpt.get();
 
             HttpSession session = req.getSession(true);
-            session.setAttribute(Constantes.SESSION_RESET_USUARIO_ID, usuarioId);
+            session.setAttribute(Constantes.SESSION_RESET_USUARIO_ID, usuario.getId());
             session.setAttribute(Constantes.SESSION_RESET_EXPIRA,
                     LocalDateTime.now().plusMinutes(Constantes.RESET_PENDIENTE_MINUTOS));
+            session.setAttribute(Constantes.SESSION_RESET_CORREO_MOSTRADO,
+                    PasswordResetService.enmascararCorreo(usuario.getCorreo()));
             session.removeAttribute(Constantes.SESSION_RESET_VERIFICADO);
 
             resp.sendRedirect(req.getContextPath() + "/recuperar-password-codigo");

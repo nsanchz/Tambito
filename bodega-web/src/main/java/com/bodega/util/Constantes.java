@@ -47,6 +47,7 @@ public final class Constantes {
     public static final String SESSION_RESET_USUARIO_ID = "resetUsuarioId";
     public static final String SESSION_RESET_EXPIRA = "resetExpira";
     public static final String SESSION_RESET_VERIFICADO = "resetVerificado";
+    public static final String SESSION_RESET_CORREO_MOSTRADO = "resetCorreoMostrado";
     public static final int RESET_PENDIENTE_MINUTOS = 15;
     public static final int CODIGO_RESET_VALIDO_MINUTOS = 10;
     public static final int MAX_INTENTOS_CODIGO_RESET = 5;

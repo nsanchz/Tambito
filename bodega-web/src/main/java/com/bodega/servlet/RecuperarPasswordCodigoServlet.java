@@ -82,6 +82,7 @@ public class RecuperarPasswordCodigoServlet extends HttpServlet {
             session.removeAttribute(Constantes.SESSION_RESET_USUARIO_ID);
             session.removeAttribute(Constantes.SESSION_RESET_EXPIRA);
             session.removeAttribute(Constantes.SESSION_RESET_VERIFICADO);
+            session.removeAttribute(Constantes.SESSION_RESET_CORREO_MOSTRADO);
             return null;
         }
         return (Integer) usuarioId;

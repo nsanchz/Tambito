@@ -93,9 +93,12 @@
         .sacudida { animation: sacudir 0.4s ease; }
     </style>
 </head>
-<body class="bg-black min-h-screen flex">
+<body class="bg-black min-h-screen relative overflow-x-hidden">
 
-<div class="w-full lg:w-[42%] min-h-screen flex flex-col justify-center px-8 sm:px-16 py-12 bg-gradient-to-br from-slate-900 to-black relative overflow-y-auto">
+<div class="absolute inset-0 malla-geometrica pointer-events-none"></div>
+
+<div class="relative min-h-screen flex items-center justify-center px-6 py-12 overflow-y-auto">
+  <div class="max-w-sm w-full bg-gradient-to-br from-slate-900/90 to-black/90 backdrop-blur-sm border border-white/10 rounded-2xl shadow-2xl p-8 sm:p-10">
     <div class="max-w-sm w-full mx-auto relative" style="min-height: 420px;">
 
         <!-- ================= PANTALLA 1: ingreso del código ================= -->
@@ -176,9 +179,8 @@
         </div>
 
     </div>
+  </div>
 </div>
-
-<div class="hidden lg:block lg:w-[58%] min-h-screen bg-black malla-geometrica"></div>
 
 <script>
     var contenedor = document.getElementById('contenedor-casillas');
