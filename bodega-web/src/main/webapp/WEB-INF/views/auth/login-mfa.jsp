@@ -102,7 +102,7 @@
 
 <div class="relative min-h-screen flex items-center justify-center px-6 py-12 overflow-y-auto">
   <div class="max-w-sm w-full bg-gradient-to-br from-slate-900/90 to-black/90 backdrop-blur-sm border border-white/10 rounded-2xl shadow-2xl p-8 sm:p-10">
-    <div class="max-w-sm w-full mx-auto relative" style="min-height: 420px;">
+    <div class="max-w-sm w-full mx-auto relative" style="min-height: 280px;">
 
         <!-- ================= PANTALLA 1: ingreso del código ================= -->
         <div id="pantalla-ingreso" class="pantalla">
@@ -159,7 +159,7 @@
         </div>
 
         <!-- ================= PANTALLA 2: verificando ================= -->
-        <div id="pantalla-verificando" class="pantalla pantalla-oculta flex flex-col items-center justify-center text-center" style="min-height: 420px;">
+        <div id="pantalla-verificando" class="pantalla pantalla-oculta flex flex-col items-center justify-center text-center">
             <h1 class="titulo-cursiva text-4xl text-white mb-2">Verificando…</h1>
             <p class="text-sm text-slate-400 mb-10">Comprobando su código de forma segura.</p>
             <svg width="110" height="110" viewBox="0 0 110 110" class="anillo-progreso">
@@ -170,7 +170,7 @@
         </div>
 
         <!-- ================= PANTALLA 3: acceso concedido ================= -->
-        <div id="pantalla-exito" class="pantalla pantalla-oculta flex flex-col items-center justify-center text-center relative overflow-hidden" style="min-height: 420px;">
+        <div id="pantalla-exito" class="pantalla pantalla-oculta flex flex-col items-center justify-center text-center relative overflow-hidden">
             <div id="capa-confeti" class="absolute inset-0 pointer-events-none"></div>
             <div class="check-exito h-20 w-20 rounded-full bg-emerald-500 flex items-center justify-center mb-6">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
