@@ -31,7 +31,7 @@
             <label class="text-sm font-medium" for="param-logo">Logo de la tienda</label>
             <div class="flex items-center gap-4">
                 <img src="${pageContext.request.contextPath}/imagen?tipo=logo" alt="Logo actual"
-                     class="h-14 w-14 rounded-lg object-cover border border-slate-200"
+                     class="h-14 w-auto max-w-[220px] object-contain rounded-lg border border-slate-200 bg-white p-1"
                      onerror="this.style.display='none'">
                 <input type="file" id="param-logo" name="logo" accept="image/*"
                        class="text-sm file:mr-3 file:h-9 file:px-3 file:rounded-lg file:border-0 file:bg-slate-100 file:text-sm">
