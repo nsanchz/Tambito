@@ -14,17 +14,20 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         .titulo-cursiva { font-family: 'Dancing Script', cursive; }
-        .malla-geometrica {
-            background-image: repeating-linear-gradient(100deg,
-                rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 1px,
-                transparent 1px, transparent 14px);
-            background-size: 400% 400%;
-            animation: desplazarMalla 18s ease-in-out infinite;
+        .fondo-nubes {
+            background-color: #000;
+            background-image:
+                radial-gradient(ellipse 55% 40% at 15% 20%, rgba(192,0,0,0.20), transparent 70%),
+                radial-gradient(ellipse 50% 45% at 85% 15%, rgba(100,116,139,0.30), transparent 70%),
+                radial-gradient(ellipse 60% 50% at 50% 90%, rgba(30,41,59,0.55), transparent 70%),
+                radial-gradient(ellipse 40% 35% at 80% 75%, rgba(192,0,0,0.14), transparent 70%);
+            background-repeat: no-repeat;
+            animation: derivarNubes 32s ease-in-out infinite;
         }
-        @keyframes desplazarMalla {
-            0%   { background-position: 0% 50%; }
-            50%  { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+        @keyframes derivarNubes {
+            0%   { background-position: 0% 0%, 100% 0%, 50% 100%, 80% 70%; }
+            50%  { background-position: 12% 15%, 85% 20%, 42% 85%, 65% 60%; }
+            100% { background-position: 0% 0%, 100% 0%, 50% 100%, 80% 70%; }
         }
 
         /* --- Casillas del código: nacen dispersas y rotadas, y se acomodan en fila ---
@@ -95,7 +98,7 @@
 </head>
 <body class="bg-black min-h-screen relative overflow-x-hidden">
 
-<div class="absolute inset-0 malla-geometrica pointer-events-none"></div>
+<div class="absolute inset-0 fondo-nubes pointer-events-none"></div>
 
 <div class="relative min-h-screen flex items-center justify-center px-6 py-12 overflow-y-auto">
   <div class="max-w-sm w-full bg-gradient-to-br from-slate-900/90 to-black/90 backdrop-blur-sm border border-white/10 rounded-2xl shadow-2xl p-8 sm:p-10">

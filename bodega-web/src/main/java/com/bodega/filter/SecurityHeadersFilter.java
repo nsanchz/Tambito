@@ -32,6 +32,18 @@ public class SecurityHeadersFilter implements Filter {
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse resp = (HttpServletResponse) response;
 
+        // Evita que el navegador (o su caché de "atrás"/bfcache) conserve y vuelva a mostrar
+        // el HTML ya generado de una página al volver o recargar — en formularios como
+        // /recuperar-password eso hacía que lo que el usuario había escrito reapareciera
+        // aunque el servidor jamás lo hubiera reenviado. No se aplica a /assets/ (CSS/JS
+        // estáticos, sin datos de usuario) para no perder su cacheo normal.
+        String contextPath = req.getContextPath();
+        String ruta = req.getRequestURI().substring(contextPath.length());
+        if (!ruta.startsWith("/assets/")) {
+            resp.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+            resp.setHeader("Pragma", "no-cache");
+        }
+
         // Clickjacking: prohíbe que cualquier sitio embeba esta aplicación en un <iframe>.
         resp.setHeader("X-Frame-Options", "DENY");
 
