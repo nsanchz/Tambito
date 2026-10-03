@@ -152,7 +152,7 @@
                                 <c:choose>
                                     <c:when test="${u.mfaHabilitado}">
                                         <form method="post" action="${pageContext.request.contextPath}/usuarios"
-                                              onsubmit="return confirm('¿Desactivar el MFA de ${fn:escapeXml(u.nombreCompleto)}?');">
+                                              onsubmit="return confirmarAccion(this, '¿Desactivar el MFA de ${fn:escapeXml(u.nombreCompleto)}?');">
                                             <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                             <input type="hidden" name="accion" value="desactivarMfa">
                                             <input type="hidden" name="usuarioId" value="${u.id}">
@@ -164,7 +164,7 @@
                                     </c:when>
                                     <c:when test="${not empty u.mfaSecret}">
                                         <form method="post" action="${pageContext.request.contextPath}/usuarios"
-                                              onsubmit="return confirm('¿Cancelar la activación pendiente de MFA de ${fn:escapeXml(u.nombreCompleto)}?');">
+                                              onsubmit="return confirmarAccion(this, '¿Cancelar la activación pendiente de MFA de ${fn:escapeXml(u.nombreCompleto)}?');">
                                             <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                             <input type="hidden" name="accion" value="desactivarMfa">
                                             <input type="hidden" name="usuarioId" value="${u.id}">
@@ -176,7 +176,7 @@
                                     </c:when>
                                     <c:otherwise>
                                         <form method="post" action="${pageContext.request.contextPath}/usuarios"
-                                              onsubmit="return confirm('Se cerrará la sesión actual de ${fn:escapeXml(u.nombreCompleto)} (si tiene una abierta). En su próximo inicio de sesión deberá escanear el QR de Google Authenticator. ¿Continuar?');">
+                                              onsubmit="return confirmarAccion(this, 'Se cerrará la sesión actual de ${fn:escapeXml(u.nombreCompleto)} (si tiene una abierta). En su próximo inicio de sesión deberá escanear el QR de Google Authenticator. ¿Continuar?');">
                                             <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                             <input type="hidden" name="accion" value="activarMfa">
                                             <input type="hidden" name="usuarioId" value="${u.id}">
@@ -366,6 +366,48 @@
         </form>
     </div>
 </div>
+
+<!-- Modal de confirmación genérico: reemplaza al confirm() nativo del navegador (antiestético
+     y no personalizable) para cualquier acción sensible de esta pantalla (MFA, etc.). Un solo
+     formulario queda "pendiente" en JS (confirmarAccion) y se reenvía manualmente si se acepta. -->
+<div id="modal-confirmacion" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div class="bg-white w-full max-w-sm rounded-xl shadow-xl overflow-hidden">
+        <div class="p-6 flex flex-col gap-4">
+            <p id="texto-confirmacion" class="text-sm text-slate-700"></p>
+            <div class="flex items-center justify-end gap-3">
+                <button type="button" onclick="cancelarConfirmacion()"
+                        class="h-9 px-4 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm">Cancelar</button>
+                <button type="button" onclick="aceptarConfirmacion()"
+                        class="h-9 px-5 btn-primario text-white rounded-lg text-sm font-medium">Aceptar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var formPendienteConfirmacion = null;
+
+    /** Sustituye a confirm(): abre el modal estilizado y deja el formulario pendiente de reenvío. */
+    function confirmarAccion(form, mensaje) {
+        formPendienteConfirmacion = form;
+        document.getElementById('texto-confirmacion').textContent = mensaje;
+        document.getElementById('modal-confirmacion').classList.remove('hidden');
+        return false;
+    }
+
+    function aceptarConfirmacion() {
+        document.getElementById('modal-confirmacion').classList.add('hidden');
+        if (formPendienteConfirmacion) {
+            formPendienteConfirmacion.submit();
+            formPendienteConfirmacion = null;
+        }
+    }
+
+    function cancelarConfirmacion() {
+        document.getElementById('modal-confirmacion').classList.add('hidden');
+        formPendienteConfirmacion = null;
+    }
+</script>
 
 <script>
     // El menú de acciones (⋮) — alternarMenuAcciones/cerrarTodosLosMenus — ahora vive como
