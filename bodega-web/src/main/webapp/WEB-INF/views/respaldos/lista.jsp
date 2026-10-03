@@ -20,7 +20,7 @@
     <div class="flex items-start justify-between gap-4 flex-wrap">
         <div>
             <h2 class="text-2xl font-bold">Respaldos de Base de Datos</h2>
-            <p class="text-sm text-slate-500">Historial de respaldos automáticos (diarios) y manuales de bodega_db.</p>
+            <p class="text-sm text-slate-500">Historial de respaldos automáticos (cada varias horas) y manuales de bodega_db.</p>
         </div>
         <form method="post" action="${pageContext.request.contextPath}/respaldos"
               class="bg-white rounded-xl shadow-sm p-3 flex flex-col gap-2 w-full max-w-md"

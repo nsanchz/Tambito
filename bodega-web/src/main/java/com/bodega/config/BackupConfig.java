@@ -65,9 +65,15 @@ public final class BackupConfig {
         return Integer.parseInt(PROPS.getProperty("db.backup.retencion.dias", "30"));
     }
 
-    /** @return hora del día (0-23, hora local) en la que corre el respaldo automático diario */
-    public static int getHoraProgramada() {
-        return Integer.parseInt(PROPS.getProperty("db.backup.hora", "2"));
+    /**
+     * @return cada cuántas horas corre el respaldo automático (database.properties ->
+     *         db.backup.intervalo.horas, por defecto 4: 00:00, 04:00, 08:00, 12:00, 16:00,
+     *         20:00 hora local del servidor). Antes era un único respaldo diario a una hora
+     *         fija; se cambió a un intervalo para tener más puntos de recuperación en el día
+     *         sin la complejidad de respaldos incrementales reales (binlogs de MySQL).
+     */
+    public static int getIntervaloHoras() {
+        return Integer.parseInt(PROPS.getProperty("db.backup.intervalo.horas", "4"));
     }
 
     /** @return el nombre de la base de datos a respaldar, extraído de la URL JDBC de conexión */

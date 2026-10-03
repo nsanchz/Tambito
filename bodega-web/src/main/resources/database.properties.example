@@ -24,7 +24,7 @@ db.backup.password=CAMBIAR_ESTA_CONTRASENA
 db.backup.mysqldump.path=/usr/bin/mysqldump
 db.backup.dir=/opt/tomcat/bodega_backups
 db.backup.retencion.dias=30
-db.backup.hora=2
+db.backup.intervalo.horas=4
 
 # Configuración SMTP para las notificaciones por correo (ver com.bodega.service.EmailService).
 # mail.smtp.password es una "Contraseña de aplicación" de Gmail, no la contraseña real.

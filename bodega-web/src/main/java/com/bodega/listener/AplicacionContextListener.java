@@ -17,7 +17,7 @@ import jakarta.servlet.annotation.WebListener;
 public class AplicacionContextListener implements ServletContextListener {
 
     /**
-     * Arranca los schedulers de respaldos automáticos diarios (ver {@link BackupScheduler}) y
+     * Arranca los schedulers de respaldos automáticos (cada varias horas, ver {@link BackupScheduler}) y
      * de resumen diario de alertas de inventario (ver {@link AlertaEmailScheduler}). El pool
      * de HikariCP se sigue inicializando de forma perezosa al primer acceso a
      * {@link DatabaseConfig}, no aquí.

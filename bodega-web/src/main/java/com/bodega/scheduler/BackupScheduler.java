@@ -11,11 +11,15 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Job de respaldo automático diario de la base de datos. Se inicia desde
+ * Job de respaldo automático de la base de datos, repetido cada N horas (en vez de una sola
+ * vez al día), para tener más puntos de recuperación posibles sin la complejidad operativa
+ * de respaldos incrementales reales (binary logs de MySQL + restauración punto-a-punto) —
+ * decisión consciente de simplicidad para el alcance de este proyecto. Se inicia desde
  * {@link com.bodega.listener.AplicacionContextListener#contextInitialized} y corre en un
  * único hilo daemon (no bloquea el apagado de Tomcat), ejecutando
- * {@link BackupService#ejecutarRespaldo} a la hora configurada
- * (database.properties -> db.backup.hora) y luego cada 24 horas.
+ * {@link BackupService#ejecutarRespaldo} alineado a horas en punto del día (database.properties
+ * -> db.backup.intervalo.horas; con el valor por defecto de 4, corre a las 00:00, 04:00, 08:00,
+ * 12:00, 16:00 y 20:00 hora local del servidor).
  */
 public final class BackupScheduler {
 
@@ -26,7 +30,7 @@ public final class BackupScheduler {
         // Clase utilitaria: no instanciable
     }
 
-    /** Programa la primera ejecución (hoy o mañana, según la hora configurada) y las siguientes cada 24 horas. */
+    /** Programa la primera ejecución (en la próxima hora en punto que calce con el intervalo) y las siguientes cada N horas. */
     public static synchronized void iniciar() {
         if (executor != null && !executor.isShutdown()) {
             return; // ya estaba iniciado (evita doble programación ante un redeploy sin destroy previo)
@@ -37,11 +41,12 @@ public final class BackupScheduler {
             return hilo;
         });
 
-        long retrasoInicialSegundos = calcularRetrasoHastaProximaEjecucion();
+        int intervaloHoras = BackupConfig.getIntervaloHoras();
+        long retrasoInicialSegundos = calcularRetrasoHastaProximaEjecucion(intervaloHoras);
         executor.scheduleAtFixedRate(
                 () -> BACKUP_SERVICE.ejecutarRespaldo(TipoRespaldo.AUTOMATICO, null),
                 retrasoInicialSegundos,
-                TimeUnit.DAYS.toSeconds(1),
+                TimeUnit.HOURS.toSeconds(intervaloHoras),
                 TimeUnit.SECONDS
         );
     }
@@ -54,14 +59,18 @@ public final class BackupScheduler {
         }
     }
 
-    /** @return segundos desde ahora hasta la próxima ocurrencia de la hora programada */
-    private static long calcularRetrasoHastaProximaEjecucion() {
+    /**
+     * @param intervaloHoras cada cuántas horas debe correr (ej. 4 -> 00:00, 04:00, 08:00...)
+     * @return segundos desde ahora hasta la próxima hora en punto alineada a ese intervalo
+     */
+    private static long calcularRetrasoHastaProximaEjecucion(int intervaloHoras) {
         LocalDateTime ahora = LocalDateTime.now();
+        int horaActual = ahora.getHour();
+        int horaAlineada = (horaActual / intervaloHoras) * intervaloHoras;
         LocalDateTime proximaEjecucion = ahora
-                .withHour(BackupConfig.getHoraProgramada())
-                .withMinute(0).withSecond(0).withNano(0);
+                .withHour(horaAlineada).withMinute(0).withSecond(0).withNano(0);
         if (!proximaEjecucion.isAfter(ahora)) {
-            proximaEjecucion = proximaEjecucion.plusDays(1);
+            proximaEjecucion = proximaEjecucion.plusHours(intervaloHoras);
         }
         return Duration.between(ahora, proximaEjecucion).getSeconds();
     }
