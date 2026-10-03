@@ -24,6 +24,10 @@ public class Usuario {
     private String mfaSecret;
     private Integer mfaActivadoPorId;
     private LocalDateTime mfaFechaActivacion;
+    private String resetPasswordCodigoHash;
+    private LocalDateTime resetPasswordExpira;
+    private int resetPasswordIntentos;
+    private boolean resetPasswordVerificado;
 
     public Usuario() {
     }
@@ -188,5 +192,45 @@ public class Usuario {
 
     public void setMfaFechaActivacion(LocalDateTime mfaFechaActivacion) {
         this.mfaFechaActivacion = mfaFechaActivacion;
+    }
+
+    /** Hash BCrypt del código de 6 dígitos de recuperación de contraseña vigente (nunca en claro); {@code null} si no hay ninguno pendiente. */
+    public String getResetPasswordCodigoHash() {
+        return resetPasswordCodigoHash;
+    }
+
+    public void setResetPasswordCodigoHash(String resetPasswordCodigoHash) {
+        this.resetPasswordCodigoHash = resetPasswordCodigoHash;
+    }
+
+    public LocalDateTime getResetPasswordExpira() {
+        return resetPasswordExpira;
+    }
+
+    public void setResetPasswordExpira(LocalDateTime resetPasswordExpira) {
+        this.resetPasswordExpira = resetPasswordExpira;
+    }
+
+    public int getResetPasswordIntentos() {
+        return resetPasswordIntentos;
+    }
+
+    public void setResetPasswordIntentos(int resetPasswordIntentos) {
+        this.resetPasswordIntentos = resetPasswordIntentos;
+    }
+
+    /** {@code true} si ya se validó el código de 6 dígitos y puede pasar a elegir la nueva contraseña. */
+    public boolean isResetPasswordVerificado() {
+        return resetPasswordVerificado;
+    }
+
+    public void setResetPasswordVerificado(boolean resetPasswordVerificado) {
+        this.resetPasswordVerificado = resetPasswordVerificado;
+    }
+
+    /** @return {@code true} si hay un código de recuperación vigente (no nulo y todavía no expiró) */
+    public boolean tieneCodigoRecuperacionVigente() {
+        return resetPasswordCodigoHash != null && resetPasswordExpira != null
+                && resetPasswordExpira.isAfter(LocalDateTime.now());
     }
 }

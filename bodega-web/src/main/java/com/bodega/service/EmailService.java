@@ -328,4 +328,33 @@ public class EmailService {
         String html = plantillaHtml("Resultado de su solicitud de desactivación", contenido);
         enviarHtml(correoSolicitante, "Solicitud " + textoEstado.toLowerCase() + ": " + entidadNombre + " — Bodega TAMBITO", html);
     }
+
+    /**
+     * Envía el código de 6 dígitos para el restablecimiento autoservicio de contraseña (ver
+     * {@code PasswordResetService}). El código se muestra grande y espaciado para que sea
+     * fácil de leer y copiar, e incluye el nombre de usuario (para que quien lo recibe
+     * confirme que el correo corresponde a su propia cuenta) y el tiempo de validez.
+     *
+     * @param correoDestino      correo registrado del usuario
+     * @param nombreUsuario      nombre de usuario de la cuenta (solo para mostrarlo en el correo)
+     * @param codigo             código de 6 dígitos en texto plano (nunca se guarda así en la base de datos)
+     * @param minutosValidez     minutos de validez del código, para mostrarlo en el cuerpo del correo
+     * @throws MessagingException si falla el envío
+     */
+    public void enviarCodigoRecuperacionPassword(String correoDestino, String nombreUsuario, String codigo,
+                                                  int minutosValidez) throws MessagingException {
+        String contenido = "<p>Recibimos una solicitud para restablecer la contraseña de la cuenta "
+                + "<strong>" + nombreUsuario + "</strong>. Use el siguiente código para continuar:</p>"
+                + "<p style=\"text-align:center;margin:22px 0;\">"
+                + "<span style=\"display:inline-block;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;"
+                + "padding:14px 22px;font-size:28px;font-weight:bold;letter-spacing:8px;color:" + COLOR_ACENTO + ";\">"
+                + codigo + "</span></p>"
+                + "<p style=\"color:#64748b;font-size:13px;\">Este código vence en " + minutosValidez + " minutos y solo "
+                + "puede usarse una vez.</p>"
+                + "<p style=\"color:#64748b;font-size:13px;\">Si usted no solicitó este cambio, puede ignorar este "
+                + "correo — su contraseña actual seguirá funcionando con normalidad.</p>";
+
+        String html = plantillaHtml("Código de verificación — restablecer contraseña", contenido);
+        enviarHtml(correoDestino, "Código para restablecer su contraseña — Bodega TAMBITO", html);
+    }
 }

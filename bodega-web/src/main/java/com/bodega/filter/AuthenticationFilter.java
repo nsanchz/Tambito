@@ -25,6 +25,7 @@ public class AuthenticationFilter implements Filter {
     private static final String[] RUTAS_PUBLICAS = {
             "/login",
             "/login-mfa",
+            "/recuperar-password",
             "/assets/",
             "/imagen",
             "/WEB-INF/views/errores/"

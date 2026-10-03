@@ -229,6 +229,60 @@
     });
     window.addEventListener('scroll', cerrarTodosLosMenus, true);
     window.addEventListener('resize', cerrarTodosLosMenus);
+
+    /**
+     * Botón "ojito" de un campo de contraseña (ver .btn-ojo/.velo-password en cabecera.jspf).
+     * Al revelar: el input pasa a type=text de inmediato (invisible, porque el velo todavía
+     * lo cubre) y luego el velo se retira hacia la derecha, dando la sensación de que el
+     * texto se revela de izquierda a derecha. Al ocultar: el velo vuelve a cubrir de derecha
+     * a izquierda y recién cuando termina (ya tapado) el input regresa a type=password; de
+     * paso se lanzan unas partículas que se desvanecen, como un pequeño "chasquido".
+     */
+    function alternarVisibilidadPassword(idCampo, boton) {
+        var input = document.getElementById(idCampo);
+        var contenedor = input.closest('.contenedor-password');
+        var velo = contenedor.querySelector('.velo-password');
+        var revelando = input.type === 'password';
+
+        if (revelando) {
+            input.type = 'text';
+            contenedor.classList.add('mostrando-password');
+        } else {
+            contenedor.classList.remove('mostrando-password');
+            lanzarParticulasDesintegracion(contenedor, input);
+            setTimeout(function () { input.type = 'password'; }, 420);
+        }
+    }
+
+    /** Calca el color de fondo real del input en su velo, para que combine exacto sea un formulario claro u oscuro. */
+    function inicializarOjosPassword() {
+        document.querySelectorAll('.contenedor-password').forEach(function (contenedor) {
+            var input = contenedor.querySelector('.input-password');
+            var velo = contenedor.querySelector('.velo-password');
+            if (!input || !velo) return;
+            var estilo = getComputedStyle(input);
+            velo.style.background = estilo.backgroundColor;
+            velo.style.borderRadius = estilo.borderRadius;
+        });
+    }
+    inicializarOjosPassword();
+
+    function lanzarParticulasDesintegracion(contenedor, input) {
+        var rect = input.getBoundingClientRect();
+        var rectContenedor = contenedor.getBoundingClientRect();
+        for (var i = 0; i < 12; i++) {
+            var particula = document.createElement('span');
+            particula.className = 'particula-desintegrar';
+            particula.style.left = (rect.left - rectContenedor.left + Math.random() * rect.width) + 'px';
+            particula.style.top = (rect.top - rectContenedor.top + Math.random() * rect.height) + 'px';
+            particula.style.background = '#94a3b8';
+            particula.style.setProperty('--dx', ((Math.random() - 0.5) * 60) + 'px');
+            particula.style.setProperty('--dy', (-15 - Math.random() * 35) + 'px');
+            particula.style.animationDelay = (Math.random() * 0.1) + 's';
+            contenedor.appendChild(particula);
+            (function (el) { setTimeout(function () { el.remove(); }, 700); })(particula);
+        }
+    }
 </script>
 </body>
 </html>

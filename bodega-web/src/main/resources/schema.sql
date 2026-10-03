@@ -25,11 +25,19 @@ CREATE TABLE usuarios (
     creado_por_id          INT           NULL,
     -- MFA (TOTP / Google Authenticator): activación y baja son exclusivas del administrador,
     -- nunca autoservicio. mfa_secret va cifrado con CifradoUtil (AES-256-GCM), igual que
-    -- clientes.direccion. Sin secreto en claro ni tabla de códigos de recuperación autoservicio.
+    -- clientes.direccion.
     mfa_habilitado         BOOLEAN       NOT NULL DEFAULT FALSE,
     mfa_secret             VARCHAR(255)  NULL,
     mfa_activado_por_id    INT           NULL,
     mfa_fecha_activacion   DATETIME      NULL,
+    -- Restablecimiento autoservicio de contraseña por correo (ver PasswordResetService):
+    -- código de 6 dígitos hasheado con BCrypt (igual que password_hash, nunca en claro),
+    -- válido por tiempo limitado y de un solo uso. reset_password_verificado solo se activa
+    -- tras validar el código, habilitando recién ahí el paso de elegir la nueva contraseña.
+    reset_password_codigo_hash VARCHAR(255) NULL,
+    reset_password_expira      DATETIME     NULL,
+    reset_password_intentos    INT          NOT NULL DEFAULT 0,
+    reset_password_verificado  BOOLEAN      NOT NULL DEFAULT FALSE,
     CONSTRAINT fk_usuario_creado_por FOREIGN KEY (creado_por_id) REFERENCES usuarios (id),
     CONSTRAINT fk_usuario_mfa_activado_por FOREIGN KEY (mfa_activado_por_id) REFERENCES usuarios (id)
 ) ENGINE = InnoDB;

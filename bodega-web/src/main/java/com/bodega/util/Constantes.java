@@ -38,4 +38,16 @@ public final class Constantes {
     // 6 dígitos es más corto que una contraseña, así que se tolera menos intentos).
     public static final int MAX_INTENTOS_MFA_FALLIDOS = 5;
     public static final int MINUTOS_BLOQUEO_MFA = 15;
+
+    // Restablecimiento autoservicio de contraseña ("olvidé mi contraseña"): sesión "pendiente
+    // de recuperación", análoga a SESSION_MFA_PENDIENTE_*, usada por los 3 pasos del flujo
+    // (solicitar -> verificar código -> elegir nueva contraseña). resetUsuarioId guarda -1
+    // como centinela cuando el usuario/correo ingresado no existe, para que el paso de
+    // verificación siga mostrando la misma pantalla genérica sin revelar si la cuenta existe.
+    public static final String SESSION_RESET_USUARIO_ID = "resetUsuarioId";
+    public static final String SESSION_RESET_EXPIRA = "resetExpira";
+    public static final String SESSION_RESET_VERIFICADO = "resetVerificado";
+    public static final int RESET_PENDIENTE_MINUTOS = 15;
+    public static final int CODIGO_RESET_VALIDO_MINUTOS = 10;
+    public static final int MAX_INTENTOS_CODIGO_RESET = 5;
 }

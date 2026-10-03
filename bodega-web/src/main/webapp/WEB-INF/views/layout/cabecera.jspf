@@ -38,6 +38,38 @@
             border-top-color: #fff; border-radius: 50%; animation: girar .6s linear infinite; margin-right: 6px;
         }
         @keyframes girar { to { transform: rotate(360deg); } }
+
+        /* Botón "ojito" animado de los campos de contraseña (ver alternarVisibilidadPassword
+           en pie.jspf): en vez de alternar type=password/text de golpe, un velo del mismo
+           color que el campo se retira/cubre con una animación, dando la sensación de que el
+           texto se revela de izquierda a derecha y se oculta de derecha a izquierda. */
+        .contenedor-password { position: relative; }
+        .btn-ojo {
+            position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+            width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+            border-radius: 9999px; color: #64748b; cursor: pointer; background: transparent; border: none; padding: 0;
+            transition: background-color .15s ease, transform .15s ease;
+        }
+        .btn-ojo:hover { background: rgba(0,0,0,0.06); }
+        .btn-ojo:active { transform: translateY(-50%) scale(0.88); }
+        .btn-ojo svg { width: 18px; height: 18px; }
+        .btn-ojo .icono-ojo-cerrado { display: none; }
+        .contenedor-password.mostrando-password .icono-ojo-abierto { display: none; }
+        .contenedor-password.mostrando-password .icono-ojo-cerrado { display: block; }
+        .velo-password {
+            position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+            transform: scaleX(1); transform-origin: right center;
+            transition: transform .45s cubic-bezier(.65,0,.35,1);
+        }
+        .contenedor-password.mostrando-password .velo-password { transform: scaleX(0); }
+        @keyframes particulaDesintegrar {
+            0% { transform: translate(0,0) scale(1); opacity: .9; }
+            100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+        }
+        .particula-desintegrar {
+            position: absolute; width: 4px; height: 4px; border-radius: 1px; pointer-events: none;
+            animation: particulaDesintegrar .55s ease-out forwards;
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 antialiased">

@@ -60,12 +60,20 @@ public class CsrfFilter implements Filter {
                         "Token de seguridad inválido o expirado. Recargue la página e intente nuevamente.");
                 return;
             }
+        } else if (session == null) {
+            // No es un POST (o es uno exento): si todavía no hay sesión, se crea aquí mismo
+            // para que el token quede listo ANTES de que la vista se renderice. Sin esto, una
+            // sesión recién creada por el propio JSP al dibujarse (ej. la primera visita a
+            // /recuperar-password) queda sin token hasta la petición siguiente, y el primer
+            // POST de ese formulario se rechaza siempre con 403 — este filtro ya había
+            // corrido (y terminado su trabajo) antes de que esa sesión existiera.
+            session = req.getSession(true);
         }
 
-        // Asegura que toda sesión autenticada tenga un token disponible para que las vistas
-        // lo rendericen en sus formularios (se genera aquí de forma perezosa: cubre tanto la
-        // sesión recién creada tras el login como una sesión antigua sin token, ej. tras un
-        // redeploy que haya conservado sesiones tolerantes a cambios de clase).
+        // Asegura que toda sesión tenga un token disponible para que las vistas lo rendericen
+        // en sus formularios (se genera aquí de forma perezosa: cubre tanto una sesión recién
+        // creada como una antigua sin token, ej. tras un redeploy que haya conservado sesiones
+        // tolerantes a cambios de clase).
         if (session != null && session.getAttribute(Constantes.SESSION_CSRF_TOKEN) == null) {
             session.setAttribute(Constantes.SESSION_CSRF_TOKEN, CsrfUtil.generarToken());
         }

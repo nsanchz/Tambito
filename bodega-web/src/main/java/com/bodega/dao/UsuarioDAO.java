@@ -378,6 +378,12 @@ public class UsuarioDAO {
         Timestamp mfaFechaActivacion = rs.getTimestamp("mfa_fecha_activacion");
         u.setMfaFechaActivacion(mfaFechaActivacion != null ? mfaFechaActivacion.toLocalDateTime() : null);
 
+        u.setResetPasswordCodigoHash(rs.getString("reset_password_codigo_hash"));
+        Timestamp resetExpira = rs.getTimestamp("reset_password_expira");
+        u.setResetPasswordExpira(resetExpira != null ? resetExpira.toLocalDateTime() : null);
+        u.setResetPasswordIntentos(rs.getInt("reset_password_intentos"));
+        u.setResetPasswordVerificado(rs.getBoolean("reset_password_verificado"));
+
         return u;
     }
 
@@ -434,6 +440,80 @@ public class UsuarioDAO {
     public void desactivarMfa(int id) throws SQLException {
         String sql = "UPDATE usuarios SET mfa_habilitado = FALSE, mfa_secret = NULL, " +
                 "mfa_activado_por_id = NULL, mfa_fecha_activacion = NULL WHERE id = ?";
+        try (Connection con = DatabaseConfig.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
+        }
+    }
+
+    /**
+     * Guarda un nuevo código de recuperación de contraseña (ya hasheado con BCrypt, igual que
+     * la contraseña misma) con su vencimiento, reiniciando el contador de intentos y el estado
+     * "verificado" — usado por {@code PasswordResetService} al iniciar el flujo autoservicio
+     * de "olvidé mi contraseña".
+     *
+     * @param id          id del usuario
+     * @param codigoHash  hash BCrypt del código de 6 dígitos, nunca en claro
+     * @param expira      instante de vencimiento del código
+     * @throws SQLException si falla la actualización
+     */
+    public void guardarCodigoRecuperacion(int id, String codigoHash, LocalDateTime expira) throws SQLException {
+        String sql = "UPDATE usuarios SET reset_password_codigo_hash = ?, reset_password_expira = ?, " +
+                "reset_password_intentos = 0, reset_password_verificado = FALSE WHERE id = ?";
+        try (Connection con = DatabaseConfig.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, codigoHash);
+            ps.setTimestamp(2, Timestamp.valueOf(expira));
+            ps.setInt(3, id);
+            ps.executeUpdate();
+        }
+    }
+
+    /**
+     * Incrementa en 1 el contador de intentos fallidos del código de recuperación vigente,
+     * usado para bloquear un código tras demasiados intentos incorrectos sin tener que
+     * esperar a que expire por tiempo.
+     *
+     * @param id id del usuario
+     * @throws SQLException si falla la actualización
+     */
+    public void incrementarIntentosRecuperacion(int id) throws SQLException {
+        String sql = "UPDATE usuarios SET reset_password_intentos = reset_password_intentos + 1 WHERE id = ?";
+        try (Connection con = DatabaseConfig.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
+        }
+    }
+
+    /**
+     * Marca el código de recuperación vigente como verificado, habilitando el último paso
+     * (elegir la nueva contraseña) sin permitir saltárselo escribiendo la URL directamente.
+     *
+     * @param id id del usuario
+     * @throws SQLException si falla la actualización
+     */
+    public void marcarRecuperacionVerificada(int id) throws SQLException {
+        String sql = "UPDATE usuarios SET reset_password_verificado = TRUE WHERE id = ?";
+        try (Connection con = DatabaseConfig.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
+        }
+    }
+
+    /**
+     * Limpia por completo el estado de recuperación de contraseña de un usuario (código,
+     * vencimiento, intentos y verificación) — usado tanto al completar exitosamente el
+     * restablecimiento como al agotar los intentos permitidos del código.
+     *
+     * @param id id del usuario
+     * @throws SQLException si falla la actualización
+     */
+    public void limpiarRecuperacion(int id) throws SQLException {
+        String sql = "UPDATE usuarios SET reset_password_codigo_hash = NULL, reset_password_expira = NULL, " +
+                "reset_password_intentos = 0, reset_password_verificado = FALSE WHERE id = ?";
         try (Connection con = DatabaseConfig.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, id);

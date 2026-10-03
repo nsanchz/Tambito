@@ -1,12 +1,11 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Sesión - <c:out value="${nombreEmpresa}" default="BodegaControl"/></title>
+    <title>Nueva contraseña</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,10 +14,6 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         .titulo-cursiva { font-family: 'Dancing Script', cursive; }
-
-        /* Malla geométrica animada (CSS puro, sin librerías 3D): un abanico de líneas que
-           se desplaza suavemente, evocando el panel derecho de la referencia visual sin
-           depender de WebGL/Canvas — liviano para servirse desde el EC2 free-tier. */
         .malla-geometrica {
             background-image: repeating-linear-gradient(100deg,
                 rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 1px,
@@ -31,7 +26,6 @@
             50%  { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
-
         .campo-oscuro {
             background: rgba(255,255,255,0.06);
             border: 1px solid rgba(255,255,255,0.12);
@@ -44,36 +38,7 @@
             box-shadow: 0 0 0 3px rgba(192,0,0,0.25);
         }
 
-        /* Indicador deslizante del selector Administración/Tienda: una sola pastilla blanca
-           que se desplaza de un lado a otro (en vez de dos fondos independientes
-           apareciendo/desapareciendo), con un ligero rebote al asentarse que evoca el
-           vaivén del agua. */
-        #terminal-indicador {
-            transition: transform 550ms cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        /* Botón "Iniciar sesión": al enviarse, un relleno gris sube desde abajo como si se
-           llenara de agua, en vez del spinner genérico del resto de la app (esta pantalla
-           no incluye pie.jspf). El brillo superior se desliza para simular un pequeño
-           oleaje mientras se llena. */
-        #btn-login-relleno {
-            transition: height 900ms cubic-bezier(0.22, 1, 0.36, 1);
-        }
-        #btn-login-relleno::before {
-            content: "";
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 3px;
-            background: rgba(255,255,255,0.6);
-            animation: ondaAgua 1.1s ease-in-out infinite;
-        }
-        @keyframes ondaAgua {
-            0%, 100% { transform: translateX(-15%); opacity: 0.4; }
-            50% { transform: translateX(15%); opacity: 0.9; }
-        }
-
-        /* Botón "ojito" animado del campo de contraseña (igual que en el resto de la app,
-           ver layout/cabecera.jspf — esta pantalla no lo incluye, así que se duplica aquí). */
+        /* Botón "ojito" animado (igual que login.jsp / cabecera.jspf — esta pantalla no incluye el layout). */
         .contenedor-password { position: relative; }
         .btn-ojo {
             position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
@@ -105,9 +70,7 @@
 </head>
 <body class="bg-black min-h-screen flex">
 
-<!-- Panel izquierdo: formulario -->
 <div class="w-full lg:w-[42%] min-h-screen flex flex-col justify-center px-8 sm:px-16 py-12 bg-gradient-to-br from-slate-900 to-black relative">
-
     <div class="max-w-sm w-full mx-auto">
         <div class="flex flex-col items-center gap-2 mb-8">
             <img src="${pageContext.request.contextPath}/imagen?tipo=logo" alt="Logotipo de la tienda"
@@ -117,38 +80,55 @@
             </span>
         </div>
 
-        <h1 class="titulo-cursiva text-5xl text-white mb-8 text-center">Iniciar sesión</h1>
+        <h1 class="titulo-cursiva text-4xl text-white mb-3 text-center">Nueva contraseña</h1>
+        <p class="text-sm text-slate-400 mb-8 text-center">Elija una nueva contraseña para su cuenta.</p>
 
         <c:if test="${not empty error}">
             <div class="bg-red-500/10 border border-red-500/30 text-red-300 rounded-lg p-3 mb-5 text-sm">
                 <c:out value="${error}"/>
             </div>
         </c:if>
-        <c:if test="${param.reestablecida == '1'}">
-            <div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 rounded-lg p-3 mb-5 text-sm">
-                Contraseña restablecida correctamente. Ya puede iniciar sesión.
-            </div>
-        </c:if>
 
-        <form method="post" action="${pageContext.request.contextPath}/login" class="flex flex-col gap-5"
-              onsubmit="return iniciarLoginConCarga(this)">
-            <div class="flex flex-col gap-1.5">
-                <label for="username" class="text-sm text-slate-300">Usuario o correo</label>
-                <input type="text" id="username" name="j_username" required autofocus
-                       value="${fn:escapeXml(usuarioIngresado)}"
-                       class="h-12 px-4 rounded-lg text-sm campo-oscuro transition-shadow">
-            </div>
+        <form method="post" action="${pageContext.request.contextPath}/recuperar-password-nueva" class="flex flex-col gap-5">
+            <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
 
             <div class="flex flex-col gap-1.5">
-                <div class="flex items-center justify-between">
-                    <label for="password" class="text-sm text-slate-300">Contraseña</label>
-                    <a href="${pageContext.request.contextPath}/recuperar-password" class="text-xs text-slate-500 hover:text-slate-300">¿Olvidaste tu contraseña?</a>
-                </div>
-                <div class="relative contenedor-password">
-                    <input type="password" id="password" name="j_password" required
+                <label for="password-nueva" class="text-sm text-slate-300">Nueva contraseña</label>
+                <div class="contenedor-password">
+                    <input type="password" id="password-nueva" name="passwordNueva" required minlength="8"
+                           oninput="actualizarFortalezaPassword()"
                            class="input-password h-12 px-4 pr-11 rounded-lg text-sm campo-oscuro transition-shadow w-full">
                     <div class="velo-password"></div>
-                    <button type="button" onclick="alternarVisibilidadPassword('password', this)"
+                    <button type="button" onclick="alternarVisibilidadPassword('password-nueva', this)"
+                            class="btn-ojo" tabindex="-1" aria-label="Mostrar u ocultar contraseña">
+                        <svg class="icono-ojo-abierto" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <svg class="icono-ojo-cerrado" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/></svg>
+                    </button>
+                </div>
+                <div class="mt-1" id="fortaleza-nueva">
+                    <div class="flex items-center justify-between text-xs mb-1">
+                        <span class="text-slate-500">Seguridad de la contraseña</span>
+                        <span class="fortaleza-label font-medium text-slate-500">—</span>
+                    </div>
+                    <div class="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div class="fortaleza-barra h-full bg-slate-500 transition-all" style="width:0%"></div>
+                    </div>
+                    <div class="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs">
+                        <span data-req="len" class="flex items-center gap-1 text-slate-500">○ 8+ caracteres</span>
+                        <span data-req="mayus" class="flex items-center gap-1 text-slate-500">○ A-Z</span>
+                        <span data-req="minus" class="flex items-center gap-1 text-slate-500">○ a-z</span>
+                        <span data-req="digito" class="flex items-center gap-1 text-slate-500">○ 123</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+                <label for="password-confirmar" class="text-sm text-slate-300">Confirmar nueva contraseña</label>
+                <div class="contenedor-password">
+                    <input type="password" id="password-confirmar" name="confirmarPassword" required minlength="8"
+                           class="input-password h-12 px-4 pr-11 rounded-lg text-sm campo-oscuro transition-shadow w-full">
+                    <div class="velo-password"></div>
+                    <button type="button" onclick="alternarVisibilidadPassword('password-confirmar', this)"
                             class="btn-ojo" tabindex="-1" aria-label="Mostrar u ocultar contraseña">
                         <svg class="icono-ojo-abierto" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                         <svg class="icono-ojo-cerrado" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/></svg>
@@ -156,71 +136,18 @@
                 </div>
             </div>
 
-            <div class="flex flex-col gap-1.5">
-                <span class="text-sm text-slate-300">Terminal</span>
-                <div class="relative grid grid-cols-2 p-1 rounded-lg campo-oscuro">
-                    <div id="terminal-indicador" class="absolute top-1 bottom-1 left-1 rounded-md bg-white"
-                         style="width: calc(50% - 4px); transform: translateX(0%);"></div>
-                    <label class="relative z-10 cursor-pointer">
-                        <input type="radio" name="terminalId" value="ADMINISTRACION" class="peer sr-only" checked
-                               onchange="moverIndicadorTerminal(this)">
-                        <span class="flex items-center justify-center h-9 rounded-md text-xs font-medium text-slate-400
-                                     peer-checked:text-slate-900 cursor-pointer transition-colors">
-                            Administración
-                        </span>
-                    </label>
-                    <label class="relative z-10 cursor-pointer">
-                        <input type="radio" name="terminalId" value="TIENDA" class="peer sr-only"
-                               onchange="moverIndicadorTerminal(this)">
-                        <span class="flex items-center justify-center h-9 rounded-md text-xs font-medium text-slate-400
-                                     peer-checked:text-slate-900 cursor-pointer transition-colors">
-                            Tienda
-                        </span>
-                    </label>
-                </div>
-            </div>
-
-            <button type="submit" id="btn-login"
-                    class="mt-3 h-12 relative overflow-hidden bg-white hover:bg-slate-200 text-slate-900 rounded-full font-medium text-sm
+            <button type="submit" id="btn-restablecer"
+                    class="mt-3 h-12 bg-white hover:bg-slate-200 text-slate-900 rounded-full font-medium text-sm
                            flex items-center justify-center transition-colors">
-                <span id="btn-login-relleno" class="absolute inset-x-0 bottom-0 h-0 bg-slate-300/80"></span>
-                <span id="btn-login-texto" class="relative z-10">Iniciar sesión</span>
+                Restablecer contraseña
             </button>
         </form>
-
-        <p class="text-center text-xs text-slate-500 mt-8">
-            Acceso exclusivo para personal autorizado de <c:out value="${nombreEmpresa}" default="Bodega TAMBITO"/>.
-        </p>
     </div>
 </div>
 
-<!-- Panel derecho: gráfico decorativo (oculto en pantallas pequeñas) -->
 <div class="hidden lg:block lg:w-[58%] min-h-screen bg-black malla-geometrica"></div>
 
 <script>
-    /** Desliza la pastilla del selector Administración/Tienda hacia el lado elegido. */
-    function moverIndicadorTerminal(radio) {
-        document.getElementById('terminal-indicador').style.transform =
-            radio.value === 'TIENDA' ? 'translateX(100%)' : 'translateX(0%)';
-    }
-
-    /**
-     * En vez del spinner genérico (esta pantalla no incluye pie.jspf), el botón se "llena"
-     * de gris de abajo hacia arriba como si fuera agua, mientras el formulario se envía de
-     * verdad. Siempre retorna true para que el submit continúe con normalidad.
-     */
-    function iniciarLoginConCarga(form) {
-        var boton = document.getElementById('btn-login');
-        if (boton.disabled) {
-            return true;
-        }
-        boton.disabled = true;
-        document.getElementById('btn-login-texto').textContent = 'Ingresando...';
-        document.getElementById('btn-login-relleno').style.height = '100%';
-        return true;
-    }
-
-    /** Mismo botón "ojito" animado del resto de la app (ver layout/pie.jspf). */
     function alternarVisibilidadPassword(idCampo, boton) {
         var input = document.getElementById(idCampo);
         var contenedor = input.closest('.contenedor-password');
@@ -260,6 +187,43 @@
         velo.style.background = estilo.backgroundColor;
         velo.style.borderRadius = estilo.borderRadius;
     });
+
+    // Refleja en vivo la misma política que valida el servidor
+    // (PasswordUtil.cumplePoliticaMinima: 8+ caracteres, mayúscula, minúscula, dígito).
+    function actualizarFortalezaPassword() {
+        var valor = document.getElementById('password-nueva').value;
+        var indicador = document.getElementById('fortaleza-nueva');
+
+        var requisitos = {
+            len: valor.length >= 8,
+            mayus: /[A-Z]/.test(valor),
+            minus: /[a-z]/.test(valor),
+            digito: /[0-9]/.test(valor)
+        };
+        var cumplidos = Object.values(requisitos).filter(Boolean).length;
+
+        indicador.querySelectorAll('[data-req]').forEach(function (span) {
+            var ok = requisitos[span.dataset.req];
+            span.classList.toggle('text-emerald-400', ok);
+            span.classList.toggle('text-slate-500', !ok);
+            span.textContent = (ok ? '✓ ' : '○ ') + span.textContent.slice(2);
+        });
+
+        var barra = indicador.querySelector('.fortaleza-barra');
+        var label = indicador.querySelector('.fortaleza-label');
+        var niveles = [
+            {ancho: '0%', color: 'bg-slate-500', texto: '—', textoColor: 'text-slate-500'},
+            {ancho: '25%', color: 'bg-red-500', texto: 'Débil', textoColor: 'text-red-400'},
+            {ancho: '55%', color: 'bg-amber-500', texto: 'Regular', textoColor: 'text-amber-400'},
+            {ancho: '80%', color: 'bg-lime-500', texto: 'Buena', textoColor: 'text-lime-400'},
+            {ancho: '100%', color: 'bg-emerald-500', texto: 'Fuerte', textoColor: 'text-emerald-400'}
+        ];
+        var nivel = niveles[valor.length === 0 ? 0 : cumplidos];
+        barra.style.width = nivel.ancho;
+        barra.className = 'fortaleza-barra h-full transition-all ' + nivel.color;
+        label.textContent = nivel.texto;
+        label.className = 'fortaleza-label font-medium ' + nivel.textoColor;
+    }
 </script>
 
 </body>
