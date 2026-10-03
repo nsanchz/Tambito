@@ -13,6 +13,7 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /** Acceso a datos de la bitácora de respaldos (bitacora_respaldos). Tabla de solo inserción. */
 public class BackupDAO {
@@ -79,6 +80,25 @@ public class BackupDAO {
                 resultado.add(mapear(rs));
             }
             return resultado;
+        }
+    }
+
+    /**
+     * @param id id del registro de bitácora
+     * @return el registro si existe, usado para resolver la ruta del archivo a descargar
+     * @throws SQLException si falla la consulta
+     */
+    public Optional<RegistroRespaldo> buscarPorId(int id) throws SQLException {
+        String sql = "SELECT b.*, u.nombres AS usuario_nombres, u.apellidos AS usuario_apellidos " +
+                "FROM bitacora_respaldos b " +
+                "LEFT JOIN usuarios u ON u.id = b.usuario_id " +
+                "WHERE b.id = ?";
+        try (Connection con = DatabaseConfig.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? Optional.of(mapear(rs)) : Optional.empty();
+            }
         }
     }
 

@@ -145,6 +145,15 @@ public class BackupService {
     }
 
     /**
+     * @param id id del registro de bitácora
+     * @return el registro si existe, usado para descargar su archivo (ver RespaldoServlet)
+     * @throws SQLException si falla la consulta
+     */
+    public java.util.Optional<RegistroRespaldo> buscarPorId(int id) throws SQLException {
+        return backupDAO.buscarPorId(id);
+    }
+
+    /**
      * Invoca {@code mysqldump} con las credenciales del usuario dedicado de respaldo
      * (bodega_backup), pasadas mediante un archivo de opciones temporal en vez del
      * parámetro {@code -p<password>} en la línea de comandos, para que la contraseña

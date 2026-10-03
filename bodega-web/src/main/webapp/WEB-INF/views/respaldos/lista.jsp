@@ -67,7 +67,11 @@
                             </span>
                         </td>
                         <td class="px-4 py-3 text-slate-500"><c:out value="${not empty r.usuarioNombre ? r.usuarioNombre : 'Automático (scheduler)'}"/></td>
-                        <td class="px-4 py-3 text-right">
+                        <td class="px-4 py-3 text-right whitespace-nowrap">
+                            <c:if test="${r.estado == 'EXITOSO'}">
+                                <a href="${pageContext.request.contextPath}/respaldos?descargar=${r.id}"
+                                   class="text-emerald-600 hover:underline mr-3">Descargar</a>
+                            </c:if>
                             <button type="button" onclick="alternarDetalleRespaldo('detalle-respaldo-${st.index}')"
                                     class="text-blue-600 hover:underline">Ver detalle</button>
                         </td>
