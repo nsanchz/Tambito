@@ -122,6 +122,11 @@ public class PerfilServlet extends HttpServlet {
                     if (resultado.exitoso) {
                         auditoriaService.registrar(usuarioIdSesion, "PASSWORD_AUTOCAMBIO", "USUARIO", usuarioIdSesion,
                                 "El usuario actualizó su propia contraseña.", req.getRemoteAddr());
+                        // Libera de inmediato el confinamiento a /perfil que aplica
+                        // AuthenticationFilter mientras haya un cambio de contraseña pendiente
+                        // (ver SESSION_DEBE_CAMBIAR_PASSWORD) — sin esto, el redirect de abajo al
+                        // panel de control rebotaría de vuelta aquí mismo en la siguiente petición.
+                        req.getSession().setAttribute(Constantes.SESSION_DEBE_CAMBIAR_PASSWORD, false);
                         // Tras un cambio de contraseña válido (incluyendo el cambio obligatorio de la
                         // contraseña temporal) se envía directo al panel de control en vez de dejar al
                         // usuario en /perfil, evitando un paso extra que no aporta nada en ese flujo.

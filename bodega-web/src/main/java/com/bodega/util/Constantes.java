@@ -14,6 +14,12 @@ public final class Constantes {
     public static final String SESSION_NOMBRE_EMPRESA = "nombreEmpresa";
     public static final String SESSION_CSRF_TOKEN = "csrfToken";
 
+    // Cacheado en sesión al iniciar sesión (ver LoginSessionHelper) para que
+    // AuthenticationFilter pueda confinar al usuario al módulo "Mi Perfil" sin tener que
+    // consultar la base de datos en cada petición. Se limpia a false ahí mismo apenas el
+    // usuario cambia su contraseña con éxito (ver PerfilServlet), sin esperar a un nuevo login.
+    public static final String SESSION_DEBE_CAMBIAR_PASSWORD = "debeCambiarPassword";
+
     // MFA: sesión "pendiente de segundo factor" — no lleva permisos de negocio, solo permite
     // completar /login-mfa. Nunca se combina con SESSION_USUARIO_ID (o hay sesión completa,
     // o hay sesión pendiente de MFA, nunca ambas a la vez).

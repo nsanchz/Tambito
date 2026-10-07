@@ -5,6 +5,7 @@ import com.bodega.model.EstadoCuenta;
 import com.bodega.model.Rol;
 import com.bodega.model.Usuario;
 import com.bodega.util.PasswordUtil;
+import com.bodega.util.SesionActivaRegistry;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -179,6 +180,12 @@ public class UsuarioService {
     public String restablecerPassword(int usuarioId) throws SQLException {
         String passwordTemporal = generarPasswordTemporal();
         usuarioDAO.restablecerPassword(usuarioId, PasswordUtil.hash(passwordTemporal));
+        // Si el usuario tenía una sesión abierta en otro dispositivo, se la cierra: de lo
+        // contrario seguiría navegando libremente con la contraseña vieja ya invalidada,
+        // sin que se le exija la temporal nueva hasta que esa sesión expire por su cuenta
+        // (el confinamiento a /perfil que aplica AuthenticationFilter se calcula al abrir
+        // sesión, no en cada petición — mismo motivo por el que MfaService hace esto mismo).
+        SesionActivaRegistry.invalidarSiExiste(usuarioId);
         return passwordTemporal;
     }
 

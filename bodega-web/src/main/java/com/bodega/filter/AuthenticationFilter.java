@@ -32,6 +32,18 @@ public class AuthenticationFilter implements Filter {
     };
 
     /**
+     * Rutas alcanzables incluso con una contraseña temporal pendiente de cambio (ver
+     * {@link #confinarSiDebeCambiarPassword}): el propio módulo donde se cambia, cerrar
+     * sesión, y los recursos estáticos/imagen que ese módulo necesita para renderizarse.
+     */
+    private static final String[] RUTAS_PERMITIDAS_CON_CAMBIO_PENDIENTE = {
+            "/perfil",
+            "/logout",
+            "/assets/",
+            "/imagen"
+    };
+
+    /**
      * No requiere inicialización: las rutas públicas están fijadas como constante
      * y la verificación de sesión no depende de parámetros de despliegue.
      *
@@ -75,7 +87,27 @@ public class AuthenticationFilter implements Filter {
             return;
         }
 
+        if (Boolean.TRUE.equals(session.getAttribute(Constantes.SESSION_DEBE_CAMBIAR_PASSWORD))
+                && !esRutaPermitidaConCambioPendiente(rutaSolicitada)) {
+            resp.sendRedirect(contextPath + "/perfil?cambioObligatorio=true");
+            return;
+        }
+
         chain.doFilter(request, response);
+    }
+
+    /**
+     * @param ruta ruta solicitada, ya sin el context path
+     * @return {@code true} si esa ruta se puede visitar aunque la sesión tenga pendiente un
+     *         cambio de contraseña obligatorio (ver {@link #RUTAS_PERMITIDAS_CON_CAMBIO_PENDIENTE})
+     */
+    private boolean esRutaPermitidaConCambioPendiente(String ruta) {
+        for (String permitida : RUTAS_PERMITIDAS_CON_CAMBIO_PENDIENTE) {
+            if (ruta.startsWith(permitida)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

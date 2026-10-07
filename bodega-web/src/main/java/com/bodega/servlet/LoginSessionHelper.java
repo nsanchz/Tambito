@@ -43,6 +43,7 @@ final class LoginSessionHelper {
         session.setAttribute(Constantes.SESSION_USUARIO_ROL, usuario.getRol().name());
         session.setAttribute(Constantes.SESSION_TERMINAL_ID, terminalId);
         session.setAttribute(Constantes.SESSION_NOMBRE_EMPRESA, nombreEmpresa);
+        session.setAttribute(Constantes.SESSION_DEBE_CAMBIAR_PASSWORD, usuario.isDebeCambiarPassword());
         SesionActivaRegistry.registrar(usuario.getId(), session);
 
         // Timeout de sesión diferenciado por rol (ver Configuración del Sistema): el valor
