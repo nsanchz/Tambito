@@ -107,7 +107,7 @@ bodega-web/
 | 15 | Respaldos de Base de Datos | Administrador |
 | 16 | Configuración del Sistema | Administrador |
 
-La explicación funcional detallada de cada módulo (qué hace, cómo funciona por dentro y qué reglas de negocio aplica) está en el documento `Documentacion_Tecnica_Detallada_Bodega_TAMBITO.docx`.
+La explicación funcional detallada de cada módulo (qué hace, cómo funciona por dentro y qué reglas de negocio aplica) está en el documento `Documentacion Tecnica Bodega TAMBITO.docx`.
 
 ## Seguridad
 
@@ -169,4 +169,3 @@ mvn clean package
 
 ---
 
-**Universidad Tecnológica del Perú** — Curso: Integrador II
