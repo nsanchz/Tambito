@@ -9,8 +9,10 @@
 
     <!-- Filtros de seguridad: el orden de declaración define el orden de ejecución.
          1) SecurityHeadersFilter va primero: agrega cabeceras a TODA respuesta (pública o no).
-         2) AuthenticationFilter (verifica sesión) SIEMPRE antes que AuthorizationFilter (rol).
-         3) CsrfFilter va al final: para cuando llega aquí, la sesión y el rol ya son válidos;
+         2) ApiKeyFilter solo corre sobre /api/public/*: valida el header X-API-Key ANTES de
+            que AuthenticationFilter decida si la ruta es pública (lo es, ver RUTAS_PUBLICAS).
+         3) AuthenticationFilter (verifica sesión) SIEMPRE antes que AuthorizationFilter (rol).
+         4) CsrfFilter va al final: para cuando llega aquí, la sesión y el rol ya son válidos;
             su único trabajo es validar el token anti-falsificación de los POST. -->
     <filter>
         <filter-name>SecurityHeadersFilter</filter-name>
@@ -19,6 +21,15 @@
     <filter-mapping>
         <filter-name>SecurityHeadersFilter</filter-name>
         <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>ApiKeyFilter</filter-name>
+        <filter-class>com.bodega.filter.ApiKeyFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>ApiKeyFilter</filter-name>
+        <url-pattern>/api/public/*</url-pattern>
     </filter-mapping>
 
     <filter>

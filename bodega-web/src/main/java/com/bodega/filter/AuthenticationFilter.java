@@ -28,7 +28,12 @@ public class AuthenticationFilter implements Filter {
             "/recuperar-password",
             "/assets/",
             "/imagen",
-            "/WEB-INF/views/errores/"
+            "/WEB-INF/views/errores/",
+            // API de solo lectura autenticada por API Key (ver ApiKeyFilter), no por sesión:
+            // se excluye aquí para que herramientas externas (Postman, etc.) puedan consumirla
+            // sin pasar por el login HTML. ApiKeyFilter ya se ejecutó antes en la cadena y
+            // rechazó la petición si la clave faltaba o era inválida.
+            "/api/public/"
     };
 
     /**
